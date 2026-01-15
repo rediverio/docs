@@ -1,3 +1,6 @@
+---
+layout: default
+---
 # Getting Started
 
 This guide will help you get ReDiver up and running in under 10 minutes.

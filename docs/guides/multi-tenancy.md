@@ -1,3 +1,6 @@
+---
+layout: default
+---
 # Multi-Tenancy Guide
 
 Hướng dẫn về kiến trúc multi-tenant trong Rediver CTEM Platform.

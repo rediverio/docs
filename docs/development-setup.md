@@ -1,3 +1,6 @@
+---
+layout: default
+---
 # Development Setup
 
 Complete guide for setting up your development environment.
@@ -58,8 +61,8 @@ Create `.vscode/settings.json`:
   "go.lintFlags": ["--fast"],
   "typescript.preferences.importModuleSpecifier": "non-relative",
   "tailwindCSS.experimental.classRegex": [
-    ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
-    ["cn\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"]
+    ["cva\(([^)]*)\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+    ["cn\(([^)]*)\)", "[\"'`]([^\"'`]*).*?[\"'`]"]
   ]
 }
 ```

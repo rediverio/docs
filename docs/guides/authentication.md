@@ -1,3 +1,6 @@
+---
+layout: default
+---
 # Authentication Guide
 
 Hướng dẫn chi tiết về authentication trong Rediver CTEM Platform.

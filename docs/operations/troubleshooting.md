@@ -1,3 +1,6 @@
+---
+layout: default
+---
 # Troubleshooting Guide
 
 Common issues and their solutions for ReDiver development and deployment.

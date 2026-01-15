@@ -1,3 +1,6 @@
+---
+layout: default
+---
 # Environment Configuration
 
 Complete reference for all environment variables across ReDiver services.

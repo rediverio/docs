@@ -1,3 +1,6 @@
+---
+layout: default
+---
 # Permission Matrix
 
 Ma trận phân quyền chính xác cho Rediver CTEM Platform.

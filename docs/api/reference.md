@@ -1,3 +1,6 @@
+---
+layout: default
+---
 # API Reference
 
 Complete API reference for Rediver CTEM Platform.

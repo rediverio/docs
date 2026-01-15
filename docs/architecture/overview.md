@@ -1,3 +1,6 @@
+---
+layout: default
+---
 # Architecture Overview
 
 This document describes the architecture of the ReDiver platform.
