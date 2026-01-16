@@ -30,7 +30,7 @@ docker pull rediverio/rediver-agent:ci
 # From GitHub Container Registry
 docker pull ghcr.io/rediverio/rediver-agent:latest
 docker pull ghcr.io/rediverio/rediver-agent:slim
-docker pull ghcr.io/rediverio/rediver-agent:ci
+docker pull rediverio/rediver-agent:ci
 ```
 
 ---
@@ -145,7 +145,7 @@ docker run --rm \
     -v $(pwd):/github/workspace \
     -e GITHUB_ACTIONS=true \
     -e GITHUB_TOKEN=$GITHUB_TOKEN \
-    ghcr.io/rediverio/rediver-agent:ci \
+    rediverio/rediver-agent:ci \
     -tools semgrep,gitleaks,trivy -target . -auto-ci
 ```
 
@@ -232,7 +232,7 @@ jobs:
           fetch-depth: 0  # Full history for diff-based scanning
 
       - name: Run Rediver Security Scan
-        uses: docker://ghcr.io/rediverio/rediver-agent:ci
+        uses: docker://rediverio/rediver-agent:ci
         with:
           args: >-
             -tools semgrep,gitleaks,trivy
@@ -274,7 +274,7 @@ stages:
 
 security-scan:
   stage: security
-  image: ghcr.io/rediverio/rediver-agent:ci
+  image: rediverio/rediver-agent:ci
   variables:
     GIT_DEPTH: 0
     GITLAB_TOKEN: $CI_JOB_TOKEN
@@ -311,7 +311,7 @@ security-scan:
 pipeline {
     agent {
         docker {
-            image 'ghcr.io/rediverio/rediver-agent:ci'
+            image 'rediverio/rediver-agent:ci'
         }
     }
 

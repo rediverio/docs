@@ -336,6 +336,66 @@ SECURE_COOKIES=true
 
 ---
 
+## Nginx Reverse Proxy (rediver-setup)
+
+Configuration for the nginx reverse proxy that serves both UI and API domains.
+
+### Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `NGINX_HOST` | Yes | `localhost` | UI domain (e.g., `rediver.io`) |
+| `API_HOST` | Yes | `api.localhost` | API domain (e.g., `api.rediver.io`) |
+
+### Configuration by Environment
+
+#### Local Development
+```bash
+NGINX_HOST=localhost
+API_HOST=api.localhost
+```
+
+#### Staging
+```bash
+NGINX_HOST=staging.rediver.io
+API_HOST=api.staging.rediver.io
+```
+
+#### Production
+```bash
+NGINX_HOST=rediver.io
+API_HOST=api.rediver.io
+```
+
+### Rate Limiting
+
+Different rate limits are configured for different endpoints:
+
+| Zone | Rate | Burst | Endpoints |
+|------|------|-------|-----------|
+| `ui_general` | 10 req/s | 20 | UI routes |
+| `api_general` | 30 req/s | 50 | General API (`/api/*`) |
+| `api_auth` | 5 req/s | 10 | Authentication (`/api/v1/auth/*`) |
+| `api_ingest` | 100 req/s | 200 | Agent data ingest (`/api/v1/agent/*`) |
+
+### CORS
+
+The API nginx configuration allows CORS requests from:
+- `localhost` (development)
+- `127.0.0.1` (development)
+- `${NGINX_HOST}` (UI domain)
+- `*.rediver.io` (all Rediver subdomains)
+
+### SSL Certificates
+
+Place SSL certificates in `nginx/ssl/`:
+- `cert.pem` - Certificate chain
+- `key.pem` - Private key
+
+See `rediver-setup/nginx/README.md` for detailed SSL setup instructions.
+
+---
+
 ## Security Best Practices
 
 1. **Never commit secrets** - Use `.env.local` (gitignored)
