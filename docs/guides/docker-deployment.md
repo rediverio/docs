@@ -9,24 +9,27 @@ Deploy and run Rediver Agent using Docker for consistent, reproducible security 
 
 ## Docker Images
 
-The Rediver Agent is available in three variants:
+The Rediver Agent is available on both **GitHub Container Registry (GHCR)** and **Docker Hub**:
 
-| Image | Tag | Description | Use Case |
-|-------|-----|-------------|----------|
-| Full | `latest` | All tools included (semgrep, gitleaks, trivy) | Production, general use |
-| Slim | `slim` | Minimal, tools mounted from host | Size-constrained environments |
-| CI | `ci` | Optimized for CI/CD pipelines | GitHub Actions, GitLab CI |
+### Available Tags
+
+| Tag | Description | Use Case |
+|-----|-------------|----------|
+| `latest` | All tools included (semgrep, gitleaks, trivy) | Production, general use |
+| `slim` | Minimal, tools mounted from host | Size-constrained environments |
+| `ci` | Optimized for CI/CD pipelines | GitHub Actions, GitLab CI |
 
 ### Pull Images
 
 ```bash
-# Full image (recommended)
+# From Docker Hub (recommended)
+docker pull rediverio/rediver-agent:latest
+docker pull rediverio/rediver-agent:slim
+docker pull rediverio/rediver-agent:ci
+
+# From GitHub Container Registry
 docker pull ghcr.io/rediverio/rediver-agent:latest
-
-# Slim image
 docker pull ghcr.io/rediverio/rediver-agent:slim
-
-# CI-optimized image
 docker pull ghcr.io/rediverio/rediver-agent:ci
 ```
 
@@ -38,19 +41,25 @@ docker pull ghcr.io/rediverio/rediver-agent:ci
 
 ```bash
 # Scan current directory with all tools
-docker run --rm -v $(pwd):/scan ghcr.io/rediverio/rediver-agent:latest \
+docker run --rm -v $(pwd):/scan rediverio/rediver-agent:latest \
     -tools semgrep,gitleaks,trivy -target /scan -verbose
 
 # Scan specific directory
-docker run --rm -v /path/to/project:/scan ghcr.io/rediverio/rediver-agent:latest \
+docker run --rm -v /path/to/project:/scan rediverio/rediver-agent:latest \
     -tool semgrep -target /scan
 
 # Push results to Rediver platform
 docker run --rm -v $(pwd):/scan \
     -e REDIVER_API_URL=https://api.rediver.io \
     -e REDIVER_API_KEY=your-api-key \
-    ghcr.io/rediverio/rediver-agent:latest \
-    -tools semgrep,gitleaks,trivy -target /scan -push
+    rediverio/rediver-agent:latest \
+    -tools semgrep,gitleaks,trivy -target /scan -push -verbose
+
+# Generate JSON and SARIF output
+docker run --rm -v $(pwd):/scan rediverio/rediver-agent:latest \
+    -tools semgrep,gitleaks,trivy -target /scan \
+    -json -output /scan/results.json \
+    -sarif -sarif-output /scan/results.sarif
 ```
 
 ### Check Tool Installation
@@ -230,19 +239,31 @@ jobs:
             -target .
             -auto-ci
             -comments
+            -push
             -verbose
             -json
             -output /github/workspace/results.json
+            -sarif
+            -sarif-output /github/workspace/results.sarif
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REDIVER_API_URL: ${{ secrets.REDIVER_API_URL }}
           REDIVER_API_KEY: ${{ secrets.REDIVER_API_KEY }}
 
+      - name: Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: results.sarif
+
       - name: Upload Results
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: security-scan-results
-          path: results.json
+          path: |
+            results.json
+            results.sarif
 ```
 
 ### GitLab CI
@@ -256,6 +277,9 @@ security-scan:
   image: ghcr.io/rediverio/rediver-agent:ci
   variables:
     GIT_DEPTH: 0
+    GITLAB_TOKEN: $CI_JOB_TOKEN
+    REDIVER_API_URL: $REDIVER_API_URL
+    REDIVER_API_KEY: $REDIVER_API_KEY
   script:
     - |
       rediver-agent \
@@ -263,14 +287,18 @@ security-scan:
         -target . \
         -auto-ci \
         -comments \
+        -push \
         -verbose \
         -json \
-        -output results.json
+        -output results.json \
+        -sarif \
+        -sarif-output gl-sast-report.json
   artifacts:
     paths:
       - results.json
+      - gl-sast-report.json
     reports:
-      sast: results.json
+      sast: gl-sast-report.json
     expire_in: 30 days
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
