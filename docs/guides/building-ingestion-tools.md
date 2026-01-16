@@ -217,6 +217,56 @@ RIS is the standard JSON format for pushing data to Rediver. All collectors and 
 | `compliance` | Compliance violations | `compliance` |
 | `web3` | Smart contract vulnerabilities | `web3` |
 
+### Finding Status
+
+Track the lifecycle of findings:
+
+| Status | Description |
+|--------|-------------|
+| `open` | Finding is active and needs attention |
+| `resolved` | Finding has been fixed |
+| `suppressed` | Finding is suppressed (won't be shown) |
+| `false_positive` | Finding was a false positive |
+| `accepted_risk` | Risk has been accepted |
+| `in_progress` | Fix is in progress |
+
+### Data Flow (Taint Tracking)
+
+For SAST findings, include data flow traces from source to sink:
+
+```json
+{
+  "data_flow": {
+    "sources": [
+      {"path": "src/api/user.go", "line": 25, "column": 12, "content": "req.Query(\"id\")", "label": "source", "index": 0}
+    ],
+    "intermediates": [
+      {"path": "src/api/user.go", "line": 28, "column": 5, "content": "userID := sanitize(id)", "label": "intermediate", "index": 1}
+    ],
+    "sinks": [
+      {"path": "src/db/query.go", "line": 45, "column": 10, "content": "db.Query(sql)", "label": "sink", "index": 2}
+    ]
+  }
+}
+```
+
+### Suppression Info
+
+Track why a finding was suppressed:
+
+```json
+{
+  "suppression": {
+    "state": "suppressed",
+    "reason": "Test code only",
+    "justification": "This code is only used in test environment and not accessible in production",
+    "suppressed_by": "security@example.com",
+    "suppressed_at": "2024-01-16T10:00:00Z",
+    "expires_at": "2024-07-16T10:00:00Z"
+  }
+}
+```
+
 ### Severity Levels
 
 | Severity | Score | Description |

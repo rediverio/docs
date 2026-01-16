@@ -38,7 +38,7 @@ import (
     "context"
     "fmt"
 
-    "github.com/rediverio/rediver-sdk/sdk/core"
+    "github.com/rediverio/rediver-sdk/pkg/core"
 )
 
 func main() {
@@ -105,7 +105,7 @@ import (
     "context"
     "time"
 
-    "github.com/rediverio/rediver-sdk/sdk/core"
+    "github.com/rediverio/rediver-sdk/pkg/core"
 )
 
 func main() {
@@ -151,7 +151,7 @@ import (
     "fmt"
     "time"
 
-    "github.com/rediverio/rediver-sdk/sdk/core"
+    "github.com/rediverio/rediver-sdk/pkg/core"
 )
 
 // MyScanner extends BaseScanner with custom logic
@@ -266,8 +266,8 @@ import (
     "context"
     "encoding/json"
 
-    "github.com/rediverio/rediver-sdk/sdk/core"
-    "github.com/rediverio/rediver-sdk/sdk/ris"
+    "github.com/rediverio/rediver-sdk/pkg/core"
+    "github.com/rediverio/rediver-sdk/pkg/ris"
 )
 
 // MyToolParser parses output from my-tool
@@ -452,8 +452,8 @@ import (
     "syscall"
     "time"
 
-    "github.com/rediverio/rediver-sdk/sdk/client"
-    "github.com/rediverio/rediver-sdk/sdk/core"
+    "github.com/rediverio/rediver-sdk/pkg/client"
+    "github.com/rediverio/rediver-sdk/pkg/core"
 )
 
 func main() {
@@ -575,7 +575,7 @@ targets:
 ### Creating Reports Programmatically
 
 ```go
-import "github.com/rediverio/rediver-sdk/sdk/ris"
+import "github.com/rediverio/rediver-sdk/pkg/ris"
 
 // Create new report
 report := ris.NewReport()
@@ -629,7 +629,7 @@ report.Findings = append(report.Findings, ris.Finding{
 ### Converting SARIF to RIS
 
 ```go
-import "github.com/rediverio/rediver-sdk/sdk/ris"
+import "github.com/rediverio/rediver-sdk/pkg/ris"
 
 sarifData := []byte(`{"version": "2.1.0", ...}`)
 
@@ -687,8 +687,8 @@ import (
     "context"
     "fmt"
 
-    "github.com/rediverio/rediver-sdk/sdk/core"
-    "github.com/rediverio/rediver-sdk/sdk/ris"
+    "github.com/rediverio/rediver-sdk/pkg/core"
+    "github.com/rediverio/rediver-sdk/pkg/ris"
 )
 
 func main() {
@@ -725,7 +725,7 @@ func main() {
 ## Pushing Results to Rediver
 
 ```go
-import "github.com/rediverio/rediver-sdk/sdk/client"
+import "github.com/rediverio/rediver-sdk/pkg/client"
 
 // Create API client
 c := client.New(&client.Config{
@@ -838,8 +838,8 @@ import (
     "syscall"
     "time"
 
-    "github.com/rediverio/rediver-sdk/sdk/client"
-    "github.com/rediverio/rediver-sdk/sdk/core"
+    "github.com/rediverio/rediver-sdk/pkg/client"
+    "github.com/rediverio/rediver-sdk/pkg/core"
 )
 
 func main() {
@@ -920,8 +920,8 @@ The Processor provides a complete scan-parse-push workflow.
 
 ```go
 import (
-    "github.com/rediverio/rediver-sdk/sdk/client"
-    "github.com/rediverio/rediver-sdk/sdk/core"
+    "github.com/rediverio/rediver-sdk/pkg/client"
+    "github.com/rediverio/rediver-sdk/pkg/core"
 )
 
 // Create API client
@@ -981,7 +981,7 @@ type Logger interface {
 
 ```go
 import (
-    "github.com/rediverio/rediver-sdk/sdk/core"
+    "github.com/rediverio/rediver-sdk/pkg/core"
     "github.com/sirupsen/logrus"
 )
 
@@ -1040,7 +1040,7 @@ Validate configurations before use.
 ### Using the Validator
 
 ```go
-import "github.com/rediverio/rediver-sdk/sdk/core"
+import "github.com/rediverio/rediver-sdk/pkg/core"
 
 // Validate scanner config
 err := core.ValidateBaseScannerConfig(&core.BaseScannerConfig{
@@ -1142,8 +1142,603 @@ Response:
 
 ---
 
+## CI Environment Detection
+
+The SDK can auto-detect CI environments (GitHub Actions, GitLab CI) and provide unified access to repository, commit, and MR/PR information.
+
+### Auto-Detection
+
+```go
+import "github.com/rediverio/rediver-sdk/pkg/gitenv"
+
+// Auto-detect CI environment
+ci := gitenv.Detect()
+
+if ci != nil {
+    fmt.Printf("CI Provider: %s\n", ci.Provider())       // "github" or "gitlab"
+    fmt.Printf("Repository: %s\n", ci.ProjectName())     // "org/repo"
+    fmt.Printf("Branch: %s\n", ci.CommitBranch())        // "feature/xyz"
+    fmt.Printf("Commit: %s\n", ci.CommitSha())           // "abc123..."
+    fmt.Printf("MR/PR ID: %s\n", ci.MergeRequestID())    // "123"
+} else {
+    fmt.Println("Running locally (no CI detected)")
+}
+```
+
+### Detect from Directory
+
+```go
+// Detect from local git repository
+ci := gitenv.DetectFromDirectory("/path/to/repo", true) // verbose=true
+
+// Returns ManualEnv if no CI, reading from .git
+fmt.Printf("Branch: %s\n", ci.CommitBranch())
+```
+
+### GitEnv Interface
+
+| Method | Description |
+|--------|-------------|
+| `Provider()` | CI provider name: "github", "gitlab", "manual" |
+| `IsActive()` | Whether this CI environment is detected |
+| `ProjectID()` | Repository ID |
+| `ProjectName()` | Repository name (org/repo format) |
+| `ProjectURL()` | Repository URL |
+| `CommitSha()` | Current commit SHA |
+| `CommitBranch()` | Current branch name |
+| `MergeRequestID()` | MR/PR number (if in MR/PR context) |
+| `SourceBranch()` | Source branch for MR/PR |
+| `TargetBranch()` | Target branch for MR/PR |
+| `TargetBranchSha()` | Base commit SHA for MR/PR diff |
+| `CreateMRComment()` | Create inline comment on MR/PR |
+
+### Environment Variables
+
+**GitHub Actions:**
+- `GITHUB_ACTIONS`, `GITHUB_TOKEN`, `GITHUB_SHA`, `GITHUB_REF_NAME`
+- `GITHUB_REPOSITORY`, `GITHUB_HEAD_REF`, `GITHUB_BASE_REF`
+- `GITHUB_EVENT_PATH` (JSON payload)
+
+**GitLab CI:**
+- `GITLAB_CI`, `GITLAB_TOKEN`, `CI_COMMIT_SHA`, `CI_COMMIT_BRANCH`
+- `CI_PROJECT_ID`, `CI_MERGE_REQUEST_IID`, `CI_MERGE_REQUEST_DIFF_BASE_SHA`
+
+---
+
+## Scan Strategy
+
+Automatically determine whether to scan all files or only changed files based on CI context.
+
+### Strategy Types
+
+| Strategy | Description | Use Case |
+|----------|-------------|----------|
+| `AllFiles` | Scan entire repository | Default, scheduled scans |
+| `ChangedFileOnly` | Scan only changed files | MR/PR scans, faster feedback |
+
+### Auto-Determination
+
+```go
+import (
+    "github.com/rediverio/rediver-sdk/pkg/gitenv"
+    "github.com/rediverio/rediver-sdk/pkg/strategy"
+)
+
+// Detect CI environment
+ci := gitenv.Detect()
+
+// Determine scan strategy
+scanCtx := &strategy.ScanContext{
+    GitEnv:   ci,
+    RepoPath: ".",
+    Verbose:  true,
+}
+
+scanStrategy, changedFiles := strategy.DetermineStrategy(scanCtx)
+
+fmt.Printf("Strategy: %s\n", scanStrategy) // "all_files" or "changed_files_only"
+
+if scanStrategy == strategy.ChangedFileOnly {
+    fmt.Printf("Changed files: %d\n", len(changedFiles))
+    for _, f := range changedFiles {
+        fmt.Printf("  %s: %s\n", f.Status, f.Path) // "added", "modified", "deleted"
+    }
+}
+```
+
+### Filter Changed Files
+
+```go
+// Filter by file extension
+goFiles := strategy.FilterByExtensions(changedFiles, []string{".go"})
+
+// Get just the paths
+paths := strategy.GetPaths(changedFiles)
+
+// Check if a path is in the changed files
+if strategy.ContainsPath(changedFiles, "src/main.go") {
+    fmt.Println("main.go was changed")
+}
+```
+
+### Strategy Logic
+
+```
+IF no git environment detected:
+    → AllFiles
+
+IF not in MR/PR context:
+    → AllFiles
+
+IF MR/PR context but no baseline commit:
+    → AllFiles
+
+IF too many files changed (> 512):
+    → AllFiles
+
+ELSE:
+    → ChangedFileOnly (with list of changed files)
+```
+
+---
+
+## Handler Pattern
+
+Handlers manage the scan lifecycle with clear callbacks: start → handle findings → complete/error.
+
+### ScanHandler Interface
+
+```go
+type ScanHandler interface {
+    OnStart(gitEnv GitEnv, scannerName, scannerType string) (*ScanInfo, error)
+    HandleFindings(params HandleFindingsParams) error
+    OnCompleted() error
+    OnError(err error) error
+}
+```
+
+### Console Handler (Local Development)
+
+```go
+import "github.com/rediverio/rediver-sdk/pkg/handler"
+
+// Simple handler that prints to console
+h := handler.NewConsoleHandler(true) // verbose=true
+
+// Use in scan workflow
+h.OnStart(gitEnv, "semgrep", "sast")
+h.HandleFindings(handler.HandleFindingsParams{
+    Report:       report,
+    Strategy:     scanStrategy,
+    ChangedFiles: changedFiles,
+    GitEnv:       gitEnv,
+})
+h.OnCompleted()
+```
+
+### Remote Handler (Push to Server + PR Comments)
+
+```go
+import (
+    "github.com/rediverio/rediver-sdk/pkg/client"
+    "github.com/rediverio/rediver-sdk/pkg/handler"
+)
+
+// Create API client
+pusher := client.New(&client.Config{
+    BaseURL: "https://api.rediver.io",
+    APIKey:  os.Getenv("REDIVER_API_KEY"),
+})
+
+// Create remote handler with PR comment support
+h := handler.NewRemoteHandler(&handler.RemoteHandlerConfig{
+    Pusher:         pusher,
+    Verbose:        true,
+    CreateComments: true,  // Enable PR/MR inline comments
+    MaxComments:    10,    // Max comments per PR (default: 10)
+})
+
+// Use in scan workflow
+scanInfo, _ := h.OnStart(gitEnv, "semgrep", "sast")
+h.HandleFindings(handler.HandleFindingsParams{
+    Report:       report,
+    Strategy:     strategy.ChangedFileOnly,
+    ChangedFiles: changedFiles,
+    GitEnv:       gitEnv,
+})
+h.OnCompleted()
+```
+
+### PR/MR Inline Comments
+
+The Remote Handler automatically creates inline comments on PRs/MRs for findings on changed files:
+
+```go
+// Comments are created for findings where:
+// 1. The finding has a valid location (path, line)
+// 2. The file is in the changed files list (for ChangedFileOnly strategy)
+// 3. We haven't exceeded MaxComments limit
+
+// Comment format:
+// 🔴 **critical**
+// ### SQL Injection in login handler
+// User input is directly concatenated into SQL query...
+// **Rule:** `CWE-89`
+// **Remediation:** Use parameterized queries
+// ---
+// *Detected by Rediver Security Scanner*
+```
+
+### Custom Handler
+
+```go
+type MyHandler struct {
+    slack *SlackClient
+}
+
+func (h *MyHandler) OnStart(gitEnv gitenv.GitEnv, name, typ string) (*handler.ScanInfo, error) {
+    h.slack.Send(fmt.Sprintf("🔍 Starting %s scan on %s", name, gitEnv.ProjectName()))
+    return &handler.ScanInfo{}, nil
+}
+
+func (h *MyHandler) HandleFindings(params handler.HandleFindingsParams) error {
+    critical := countBySeverity(params.Report.Findings, "critical")
+    if critical > 0 {
+        h.slack.Send(fmt.Sprintf("🚨 Found %d critical findings!", critical))
+    }
+    return nil
+}
+
+func (h *MyHandler) OnCompleted() error {
+    h.slack.Send("✅ Scan completed")
+    return nil
+}
+
+func (h *MyHandler) OnError(err error) error {
+    h.slack.Send(fmt.Sprintf("❌ Scan failed: %v", err))
+    return nil
+}
+```
+
+---
+
+## Native Scanners
+
+The SDK includes native scanner implementations with full parsing support.
+
+### Semgrep Scanner
+
+```go
+import (
+    "github.com/rediverio/rediver-sdk/pkg/scanners"
+    "github.com/rediverio/rediver-sdk/pkg/scanners/semgrep"
+)
+
+// Create scanner with defaults
+scanner := scanners.Semgrep()
+scanner.Verbose = true
+scanner.DataflowTrace = true // Enable taint tracking
+
+// Or with custom configuration
+scanner := scanners.SemgrepWithConfig(scanners.SemgrepOptions{
+    Configs:       []string{"p/security-audit", "p/owasp-top-ten"},
+    Severities:    []string{"ERROR", "WARNING"},
+    ExcludePaths:  []string{"vendor", "node_modules"},
+    ProEngine:     true,  // Use Semgrep Pro
+    DataflowTrace: true,  // Enable dataflow traces
+    MaxMemory:     4096,  // MB
+    Jobs:          4,     // Parallel jobs
+})
+
+// Run scan
+result, _ := scanner.Scan(ctx, "/path/to/project", &core.ScanOptions{})
+
+// Parse to RIS
+parser := &semgrep.Parser{}
+report, _ := parser.Parse(ctx, result.RawOutput, nil)
+
+// Report includes DataFlow for taint tracking findings
+for _, f := range report.Findings {
+    if f.DataFlow != nil {
+        fmt.Println("Taint flow:")
+        for _, src := range f.DataFlow.Sources {
+            fmt.Printf("  Source: %s:%d\n", src.Path, src.Line)
+        }
+        for _, sink := range f.DataFlow.Sinks {
+            fmt.Printf("  Sink: %s:%d\n", sink.Path, sink.Line)
+        }
+    }
+}
+```
+
+### Gitleaks Scanner
+
+```go
+import (
+    "github.com/rediverio/rediver-sdk/pkg/scanners"
+    "github.com/rediverio/rediver-sdk/pkg/scanners/gitleaks"
+)
+
+// Create scanner with defaults
+scanner := scanners.Gitleaks()
+scanner.Verbose = true
+
+// Or with custom configuration
+scanner := scanners.GitleaksWithConfig(scanners.GitleaksOptions{
+    ConfigFile: ".gitleaks.toml", // Custom rules
+    Timeout:    30 * time.Minute,
+    Verbose:    true,
+})
+
+// Run scan (returns SecretResult with structured findings)
+result, _ := scanner.Scan(ctx, "/path/to/project", &core.SecretScanOptions{
+    NoGit: false, // Scan git history
+})
+
+fmt.Printf("Found %d secrets\n", len(result.Secrets))
+for _, s := range result.Secrets {
+    fmt.Printf("  %s in %s:%d (masked: %s)\n",
+        s.SecretType, s.File, s.StartLine, s.MaskedValue)
+}
+
+// Or use generic scan for RIS parsing
+genericResult, _ := scanner.GenericScan(ctx, "/path/to/project", nil)
+parser := &gitleaks.Parser{}
+report, _ := parser.Parse(ctx, genericResult.RawOutput, nil)
+```
+
+### Trivy Scanner
+
+```go
+import (
+    "github.com/rediverio/rediver-sdk/pkg/scanners"
+    "github.com/rediverio/rediver-sdk/pkg/scanners/trivy"
+)
+
+// Create scanner with defaults (filesystem mode, vulnerability scanning)
+scanner := scanners.Trivy()
+scanner.Verbose = true
+
+// Different scan modes
+fsScanner := scanners.TrivyFS()           // Filesystem scanning
+configScanner := scanners.TrivyConfig()   // IaC/misconfiguration scanning
+imageScanner := scanners.TrivyImage()     // Container image scanning
+fullScanner := scanners.TrivyFull()       // All scanners (vuln, misconfig, secret)
+
+// Or with custom configuration
+scanner := scanners.TrivyWithConfig(scanners.TrivyOptions{
+    Mode:          "fs",                                    // fs, config, image, repo
+    Scanners:      []string{"vuln", "misconfig", "secret"}, // What to scan for
+    Severity:      []string{"CRITICAL", "HIGH", "MEDIUM"},  // Severity filter
+    IgnoreUnfixed: true,                                    // Skip unfixed vulns
+    SkipDBUpdate:  false,                                   // Update vuln DB
+    SkipDirs:      []string{"vendor", "node_modules"},      // Exclude directories
+    Timeout:       30 * time.Minute,
+    Verbose:       true,
+})
+
+// Run scan (returns ScanResult with raw JSON)
+result, _ := scanner.Scan(ctx, "/path/to/project", &core.ScanOptions{})
+
+// Parse to RIS
+parser := &trivy.Parser{Verbose: true}
+report, _ := parser.Parse(ctx, result.RawOutput, nil)
+
+fmt.Printf("Found %d findings\n", len(report.Findings))
+for _, f := range report.Findings {
+    fmt.Printf("  [%s] %s: %s\n", f.Type, f.Severity, f.Title)
+
+    // Vulnerability details
+    if f.Vulnerability != nil {
+        fmt.Printf("    Package: %s@%s -> %s\n",
+            f.Vulnerability.Package,
+            f.Vulnerability.AffectedVersion,
+            f.Vulnerability.FixedVersion)
+        fmt.Printf("    CVSS: %.1f (%s)\n",
+            f.Vulnerability.CVSSScore,
+            f.Vulnerability.CVSSVector)
+    }
+
+    // Misconfiguration details
+    if f.Misconfiguration != nil {
+        fmt.Printf("    Policy: %s\n", f.Misconfiguration.PolicyID)
+        fmt.Printf("    Resource: %s\n", f.Misconfiguration.ResourceName)
+    }
+
+    // Secret details
+    if f.Secret != nil {
+        fmt.Printf("    Type: %s (masked: %s)\n",
+            f.Secret.SecretType,
+            f.Secret.MaskedValue)
+    }
+}
+```
+
+### Trivy SCA Mode
+
+For Software Composition Analysis (SCA) with structured results:
+
+```go
+// Use ScanSCA for detailed package/vulnerability information
+result, _ := scanner.ScanSCA(ctx, "/path/to/project", &core.ScaScanOptions{
+    SkipDBUpdate:  false,
+    IgnoreUnfixed: false,
+})
+
+// Access packages
+fmt.Printf("Found %d packages\n", len(result.Packages))
+for _, pkg := range result.Packages {
+    fmt.Printf("  %s@%s (%s)\n", pkg.Name, pkg.Version, pkg.Type)
+    if pkg.PURL != "" {
+        fmt.Printf("    PURL: %s\n", pkg.PURL)
+    }
+}
+
+// Access vulnerabilities
+fmt.Printf("Found %d vulnerabilities\n", len(result.Vulnerabilities))
+for _, vuln := range result.Vulnerabilities {
+    fmt.Printf("  %s [%s]: %s\n", vuln.ID, vuln.Severity, vuln.Name)
+    fmt.Printf("    Package: %s@%s\n", vuln.PkgName, vuln.PkgVersion)
+    if vuln.FixedVersion != "" {
+        fmt.Printf("    Fix: upgrade to %s\n", vuln.FixedVersion)
+    }
+    if vuln.Metadata != nil && vuln.Metadata.CVSSScore > 0 {
+        fmt.Printf("    CVSS: %.1f\n", vuln.Metadata.CVSSScore)
+    }
+}
+```
+
+### Trivy Scan Modes
+
+| Mode | Description | Preset Function |
+|------|-------------|-----------------|
+| `fs` | Scan filesystem for vulnerabilities | `scanners.TrivyFS()` |
+| `config` | Scan for IaC misconfigurations | `scanners.TrivyConfig()` |
+| `image` | Scan container images | `scanners.TrivyImage()` |
+| `repo` | Scan git repository | N/A (use TrivyWithConfig) |
+
+### Trivy Scanner Types
+
+| Scanner | Detects |
+|---------|---------|
+| `vuln` | Package vulnerabilities (CVEs) |
+| `misconfig` | IaC misconfigurations (Terraform, K8s, Dockerfile) |
+| `secret` | Embedded secrets and credentials |
+| `license` | License compliance issues |
+
+### Scanner Registry
+
+```go
+import "github.com/rediverio/rediver-sdk/pkg/scanners"
+
+// Create registry with all built-in scanners
+registry := scanners.NewRegistry()
+
+// Get scanners by type
+secretScanner := registry.GetSecretScanner("gitleaks")
+sastScanner := registry.GetSASTScanner("semgrep")
+scaScanner := registry.GetSCAScanner("trivy")
+
+// List available scanners
+fmt.Println("Secret scanners:", registry.ListSecretScanners())
+fmt.Println("SAST scanners:", registry.ListSASTScanners())
+fmt.Println("SCA scanners:", registry.ListSCAScanners())
+
+// Register custom scanner
+registry.RegisterSecretScanner(myCustomSecretScanner)
+registry.RegisterSASTScanner(myCustomSASTScanner)
+registry.RegisterSCAScanner(myCustomSCAScanner)
+```
+
+---
+
+## Complete CI Integration Example
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "os"
+
+    "github.com/rediverio/rediver-sdk/pkg/client"
+    "github.com/rediverio/rediver-sdk/pkg/gitenv"
+    "github.com/rediverio/rediver-sdk/pkg/handler"
+    "github.com/rediverio/rediver-sdk/pkg/scanners"
+    "github.com/rediverio/rediver-sdk/pkg/scanners/semgrep"
+    "github.com/rediverio/rediver-sdk/pkg/strategy"
+)
+
+func main() {
+    ctx := context.Background()
+
+    // 1. Detect CI environment
+    ci := gitenv.DetectWithVerbose(true)
+    if ci != nil {
+        fmt.Printf("Running in %s CI\n", ci.Provider())
+    }
+
+    // 2. Determine scan strategy
+    scanCtx := &strategy.ScanContext{
+        GitEnv:   ci,
+        RepoPath: ".",
+        Verbose:  true,
+    }
+    scanStrategy, changedFiles := strategy.DetermineStrategy(scanCtx)
+    fmt.Printf("Strategy: %s (%d changed files)\n", scanStrategy, len(changedFiles))
+
+    // 3. Initialize handler
+    pusher := client.New(&client.Config{
+        BaseURL: "https://api.rediver.io",
+        APIKey:  os.Getenv("REDIVER_API_KEY"),
+    })
+    h := handler.NewRemoteHandler(&handler.RemoteHandlerConfig{
+        Pusher:         pusher,
+        Verbose:        true,
+        CreateComments: ci != nil && ci.MergeRequestID() != "",
+    })
+
+    // 4. Start scan
+    h.OnStart(ci, "semgrep", "sast")
+
+    // 5. Run scanner
+    scanner := scanners.Semgrep()
+    scanner.DataflowTrace = true
+    result, err := scanner.Scan(ctx, ".", nil)
+    if err != nil {
+        h.OnError(err)
+        os.Exit(1)
+    }
+
+    // 6. Parse results
+    parser := &semgrep.Parser{}
+    report, _ := parser.Parse(ctx, result.RawOutput, nil)
+    fmt.Printf("Found %d findings\n", len(report.Findings))
+
+    // 7. Handle findings (push to server + create PR comments)
+    h.HandleFindings(handler.HandleFindingsParams{
+        Report:       report,
+        Strategy:     scanStrategy,
+        ChangedFiles: changedFiles,
+        GitEnv:       ci,
+    })
+
+    // 8. Complete
+    h.OnCompleted()
+}
+```
+
+---
+
+## Docker Deployment
+
+The SDK provides Docker images for easy deployment. See the [Docker Deployment Guide](./docker-deployment.md) for full details.
+
+### Quick Start
+
+```bash
+# Run scan with Docker
+docker run --rm -v $(pwd):/scan ghcr.io/rediverio/rediver-agent:latest \
+    -tools semgrep,gitleaks,trivy -target /scan -verbose
+
+# Check tools
+docker run --rm ghcr.io/rediverio/rediver-agent:latest -check-tools
+```
+
+### Available Images
+
+| Image | Description |
+|-------|-------------|
+| `ghcr.io/rediverio/rediver-agent:latest` | Full image with all tools |
+| `ghcr.io/rediverio/rediver-agent:slim` | Minimal (tools mounted) |
+| `ghcr.io/rediverio/rediver-agent:ci` | CI/CD optimized |
+
+---
+
 ## Related Documentation
 
+- [Docker Deployment Guide](./docker-deployment.md) - Docker images and CI/CD integration
 - [SDK & API Integration Architecture](../architecture/sdk-api-integration.md) - How SDK integrates with API
 - [Server-Agent Command Architecture](../architecture/server-agent-command.md) - Remote agent control
 - [Building Ingestion Tools](./building-ingestion-tools.md) - RIS schema reference
@@ -1157,4 +1752,6 @@ Response:
 Full working examples are available in the SDK repository:
 
 - [`examples/custom-scanner`](https://github.com/rediverio/rediver-sdk/tree/main/examples/custom-scanner) - Custom scanner implementation
+- [`examples/semgrep-test`](https://github.com/rediverio/rediver-sdk/tree/main/examples/semgrep-test) - Semgrep scanner integration
+- [`examples/integration-test`](https://github.com/rediverio/rediver-sdk/tree/main/examples/integration-test) - API client integration
 - [`cmd/rediver-agent`](https://github.com/rediverio/rediver-sdk/tree/main/cmd/rediver-agent) - CLI agent

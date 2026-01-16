@@ -1,0 +1,509 @@
+---
+layout: default
+title: Running Workers
+parent: Guides
+nav_order: 4
+---
+# Running Workers Guide
+
+This guide explains how to create, configure, and run Workers (scanners, agents, collectors) with the Rediver platform.
+
+---
+
+## Overview
+
+Workers are distributed components that execute security scans and push findings back to Rediver. The workflow is:
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│  1. Create      │     │  2. Get API     │     │  3. Run         │
+│  Worker in UI   │────▶│  Key            │────▶│  rediver-agent  │
+│                 │     │                 │     │                 │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+                                                        │
+                                                        ▼
+                              ┌──────────────────────────────────────┐
+                              │  Agent connects to platform:         │
+                              │  - Sends heartbeats                  │
+                              │  - Polls for commands                │
+                              │  - Executes scans                    │
+                              │  - Pushes findings                   │
+                              └──────────────────────────────────────┘
+```
+
+---
+
+## Step 1: Create a Worker in UI
+
+1. Navigate to **Scoping > Workers** in the sidebar
+2. Click **+ Add Worker** button
+3. Fill in the worker details:
+   - **Name**: Descriptive name (e.g., "prod-scanner-01")
+   - **Type**: Select worker type:
+     - `Scanner`: Runs security tools (semgrep, trivy, nuclei, etc.)
+     - `Agent`: Full daemon with scanning + command execution
+     - `Collector`: Pulls data from external sources
+     - `Worker`: General-purpose worker
+   - **Capabilities**: What the worker can do (SAST, SCA, Secrets, etc.)
+   - **Tools**: Which security tools are installed (semgrep, trivy, gitleaks, etc.)
+   - **Execution Mode**:
+     - `Standalone`: Runs independently with scheduled scans
+     - `Daemon`: Polls server for commands
+4. Click **Create Worker**
+
+> **IMPORTANT**: Copy and save the API key immediately! It is only shown once during creation.
+
+---
+
+## Step 2: Get the API Key
+
+### On Worker Creation
+When you create a worker, the API key is displayed in a dialog:
+- Click the **Copy** button to copy the full key
+- Store it securely (environment variable, secrets manager, etc.)
+
+### If You Lost the API Key
+If you didn't save the API key:
+1. Click the **...** menu on the worker card
+2. Select **Regenerate API Key**
+3. Confirm the regeneration (this invalidates the old key)
+4. Copy and save the new key from the dialog
+
+> **Warning**: Regenerating a key will immediately invalidate the old key. Any running agents using the old key will fail to authenticate.
+
+---
+
+## Step 3: Install the Rediver Agent
+
+### Option A: Download Pre-built Binary
+```bash
+# Download latest release
+curl -L https://github.com/rediverio/rediver/releases/latest/download/rediver-agent-linux-amd64 -o rediver-agent
+chmod +x rediver-agent
+```
+
+### Option B: Build from Source
+```bash
+cd rediver-sdk
+go build -o rediver-agent ./cmd/rediver-agent
+```
+
+### Option C: Docker
+```bash
+docker pull rediver/agent:latest
+```
+
+---
+
+## Step 4: Configure the Agent
+
+### Quick Start: Use "View Config" in UI
+
+The easiest way to get your agent configuration is using the **View Config** feature:
+
+1. Go to **Scoping > Workers**
+2. Click the **...** menu on your worker card
+3. Select **View Config**
+4. Choose your preferred format:
+   - **YAML**: Full configuration file
+   - **Environment Variables**: For Docker/CI environments
+   - **Docker**: Ready-to-run Docker command
+   - **CLI**: Command-line arguments
+
+> **Tip**: After regenerating an API key, the "View Config" button shows the new key pre-filled, making it easy to copy the updated configuration.
+
+### Manual Configuration
+
+Create a configuration file `agent.yaml`:
+
+```yaml
+# Agent Configuration
+agent:
+  name: prod-scanner-01              # Must match worker name in UI
+  enable_commands: true              # Allow server to send commands
+  command_poll_interval: 30s         # How often to poll for commands
+  heartbeat_interval: 1m             # How often to send heartbeat
+
+# Rediver Platform Connection
+rediver:
+  base_url: https://api.rediver.io   # Your Rediver API URL
+  api_key: rdw_xxxxxxxxxxxxxxxxxx    # API key from Step 2
+  worker_id: 76d81868-25cd-...       # Optional: Worker UUID from UI
+  timeout: 30s
+
+# Enabled Scanners
+scanners:
+  - name: semgrep
+    enabled: true
+    config:
+      rules: ["p/security-audit", "p/owasp-top-ten"]
+
+  - name: trivy
+    enabled: true
+    scan_types: ["fs", "image"]
+
+  - name: gitleaks
+    enabled: true
+
+# Default Scan Targets (for standalone mode)
+targets:
+  - /opt/code/project1
+  - /opt/code/project2
+```
+
+### Environment Variables
+You can also use environment variables:
+
+```bash
+export REDIVER_API_URL=https://api.rediver.io
+export REDIVER_API_KEY=rdw_xxxxxxxxxxxxxxxxxx
+export REDIVER_WORKER_ID=76d81868-25cd-45e6-ba66-6adfda4d0573
+```
+
+---
+
+## Step 5: Run the Agent
+
+### Execution Modes Comparison
+
+| Mode | Command | Push Behavior | Use Case |
+|------|---------|---------------|----------|
+| **One-Shot** | `./rediver-agent -tool X -push` | Manual (`-push` required) | CI/CD pipelines, ad-hoc scans |
+| **Daemon** | `./rediver-agent -daemon -config X` | Automatic | Continuous monitoring, servers |
+
+### One-Shot Mode (Single Scan)
+Run a single scan and exit:
+
+```bash
+# Scan with a specific tool and push to Rediver
+./rediver-agent -tool trivy -target /path/to/project -push
+
+# Scan with multiple tools
+./rediver-agent -tools semgrep,gitleaks,trivy -target . -push
+
+# Using config file (IMPORTANT: add -push flag!)
+./rediver-agent -config agent.yaml -push
+
+# Scan without pushing (dry run / local testing)
+./rediver-agent -tool semgrep -target . -output ./results.json
+```
+
+> **IMPORTANT**: In one-shot mode, you MUST use the `-push` flag to send findings to Rediver. Without `-push`, findings are only displayed locally and not saved.
+
+### Daemon Mode (Continuous)
+Run as a long-running service. In daemon mode, findings are **automatically pushed** after each scan.
+
+```bash
+# Start with config file (auto-push enabled)
+./rediver-agent -daemon -config agent.yaml
+
+# With verbose logging
+./rediver-agent -daemon -config agent.yaml -verbose
+
+# Standalone mode (no server commands, still auto-pushes)
+./rediver-agent -daemon -config agent.yaml -standalone
+```
+
+> **Note**: In daemon mode, you don't need the `-push` flag. Findings are automatically pushed after each scheduled scan.
+
+### Docker
+```bash
+docker run -d \
+  --name rediver-agent \
+  -v /opt/code:/code:ro \
+  -v ./agent.yaml:/app/agent.yaml \
+  -e REDIVER_API_KEY=rdw_xxx \
+  rediver/agent:latest \
+  -daemon -config /app/agent.yaml
+```
+
+### Systemd Service
+Create `/etc/systemd/system/rediver-agent.service`:
+
+```ini
+[Unit]
+Description=Rediver Security Scanner Agent
+After=network.target
+
+[Service]
+Type=simple
+User=rediver
+Group=rediver
+WorkingDirectory=/opt/rediver
+ExecStart=/opt/rediver/rediver-agent -daemon -config /opt/rediver/agent.yaml
+Restart=always
+RestartSec=10
+Environment=REDIVER_API_KEY=rdw_xxx
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable rediver-agent
+sudo systemctl start rediver-agent
+```
+
+---
+
+## Step 6: Verify Connection
+
+### Check Worker Status in UI
+1. Go to **Scoping > Workers**
+2. The worker card should show:
+   - **Status**: Active (green)
+   - **Last Seen**: Recent timestamp
+
+### Check Agent Logs
+```bash
+# Systemd
+journalctl -u rediver-agent -f
+
+# Docker
+docker logs -f rediver-agent
+```
+
+You should see:
+```
+INFO  Connecting to Rediver platform...
+INFO  Heartbeat sent successfully
+INFO  Status: active
+INFO  Polling for commands...
+```
+
+---
+
+## Where Are Findings Stored?
+
+When the agent pushes findings, they are stored in the database and can be viewed in the UI.
+
+### Data Flow
+
+```
+┌─────────────┐     ┌──────────────────┐     ┌─────────────────┐     ┌──────────────┐
+│   Agent     │────▶│  POST /api/v1/   │────▶│  IngestService  │────▶│  PostgreSQL  │
+│   Scan      │     │  ingest/findings │     │                 │     │  (findings)  │
+└─────────────┘     └──────────────────┘     └─────────────────┘     └──────────────┘
+```
+
+### Viewing Findings in UI
+
+| Page | Path | Description |
+|------|------|-------------|
+| **All Findings** | `/findings` | All findings from all scanners |
+| **Code Exposures** | `/exposures/code` | Code-related findings (SAST, secrets) |
+| **Insights** | `/insights/findings` | Findings analytics and trends |
+| **Repository Detail** | `/assets/repositories/[id]` | Findings linked to a specific repository |
+
+### Linking Findings to Assets
+
+For findings to appear correctly in the UI, they should be linked to an **Asset** (repository, domain, host, etc.).
+
+**Option 1: Auto-detection by path**
+
+If scanning a git repository, the agent can auto-detect the repository URL:
+
+```yaml
+targets:
+  - /path/to/git/repo  # Agent detects .git/config
+```
+
+**Option 2: Specify asset in config**
+
+```yaml
+# In agent.yaml
+scan_options:
+  asset_type: repository
+  asset_value: github.com/org/repo
+```
+
+**Option 3: Create asset first in UI**
+
+1. Go to **Discovery > Assets > Repositories**
+2. Click **+ Add Repository**
+3. Enter repository URL (e.g., `github.com/org/repo`)
+4. Copy the Asset ID
+5. Use it in your agent config:
+
+```yaml
+rediver:
+  asset_id: "550e8400-e29b-41d4-a716-446655440000"  # Asset UUID from UI
+```
+
+### Troubleshooting: Findings Not Appearing
+
+1. **Check push was successful**: Look for "Pushed: X created" in agent output
+2. **Verify tenant**: Ensure API key belongs to the correct tenant
+3. **Check asset linking**: Findings without assets may not appear in filtered views
+4. **Refresh the page**: UI may need a refresh to show new findings
+
+---
+
+## Triggering Scans
+
+### From the UI (Coming Soon)
+1. Go to **Discovery > Scan Management**
+2. Select targets and scanner
+3. Click **Start Scan**
+4. The command is sent to the appropriate worker
+
+### From the Agent (Scheduled)
+Configure `scan_interval` in `agent.yaml`:
+
+```yaml
+agent:
+  scan_interval: 6h    # Run scans every 6 hours
+  targets:
+    - /opt/code/app1
+    - /opt/code/app2
+```
+
+### Manually via API
+```bash
+curl -X POST https://api.rediver.io/api/v1/commands \
+  -H "Authorization: Bearer $JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "worker_id": "76d81868-25cd-45e6-ba66-6adfda4d0573",
+    "type": "scan",
+    "payload": {
+      "scanner": "trivy",
+      "target": "/opt/code/project",
+      "config": {}
+    }
+  }'
+```
+
+---
+
+## Worker Types Reference
+
+| Type | Description | Use Case |
+|------|-------------|----------|
+| **Scanner** | Runs security scanning tools | SAST, SCA, secrets detection |
+| **Agent** | Full-featured daemon | Enterprise continuous scanning |
+| **Collector** | Pulls data from external sources | GitHub/GitLab alerts aggregation |
+| **Worker** | General purpose | Custom integrations |
+
+---
+
+## Supported Tools
+
+| Tool | Capability | Output Format |
+|------|------------|---------------|
+| Semgrep | SAST | SARIF |
+| Trivy | SCA, Container, IaC | JSON |
+| Gitleaks | Secrets | JSON |
+| Nuclei | DAST | JSON |
+| Checkov | IaC | SARIF |
+| TFSec | Terraform | SARIF |
+| Grype | SCA | JSON |
+| Syft | SBOM | SPDX/CycloneDX |
+
+---
+
+## Troubleshooting
+
+### Worker shows "Inactive"
+Workers are automatically marked as "Inactive" if they don't send a heartbeat within the configured timeout (default: 5 minutes).
+
+**Common causes:**
+- Agent is not running: `ps aux | grep rediver-agent`
+- Agent crashed - check logs for errors
+- Network issues preventing heartbeat
+- API key is invalid or revoked
+
+**To fix:**
+1. Check if agent is running
+2. Verify agent logs for connection errors
+3. Ensure API key is correct
+4. Restart the agent if needed
+
+> **Note**: When the agent reconnects and sends a heartbeat, the status will automatically change back to "Active".
+
+### 401 Unauthorized
+- API key may be invalid or revoked
+- Regenerate the API key in UI
+- Update agent configuration with new key
+
+### 403 Forbidden
+- Worker status may be "revoked" or "error"
+- Check worker permissions in UI
+- Verify tenant ID is correct
+
+### Scans Not Running
+- Check if `enable_commands: true` in config
+- Verify `command_poll_interval` is reasonable (30s-60s)
+- Check agent logs for command polling status
+
+### Findings Not Appearing
+
+**Most common cause**: Missing `-push` flag in one-shot mode!
+
+```bash
+# WRONG - findings only displayed locally
+./rediver-agent -config agent.yaml
+
+# CORRECT - findings pushed to Rediver
+./rediver-agent -config agent.yaml -push
+```
+
+**Other causes:**
+- Verify scan completed successfully in agent logs
+- Check for "Pushed: X created" message in output
+- Check ingest API responses with `-verbose` flag
+- Ensure asset exists and is linked correctly
+- Refresh the UI page after pushing
+
+---
+
+## Server Configuration (Administrators)
+
+### Heartbeat Timeout
+
+The Rediver server automatically marks workers as "Inactive" when they stop sending heartbeats. This is configurable via environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `WORKER_HEALTH_CHECK_ENABLED` | `true` | Enable/disable automatic status checking |
+| `WORKER_HEARTBEAT_TIMEOUT` | `5m` | How long to wait before marking worker as inactive |
+| `WORKER_HEALTH_CHECK_INTERVAL` | `1m` | How often to check for stale workers |
+
+Example configuration:
+```bash
+# Increase timeout to 10 minutes
+export WORKER_HEARTBEAT_TIMEOUT=10m
+
+# Check every 2 minutes
+export WORKER_HEALTH_CHECK_INTERVAL=2m
+
+# Disable automatic status checking
+export WORKER_HEALTH_CHECK_ENABLED=false
+```
+
+> **Note**: Set the heartbeat timeout to at least 2-3x the agent's heartbeat interval to avoid false positives due to network latency.
+
+---
+
+## Security Best Practices
+
+1. **API Key Storage**: Never commit API keys to version control. Use environment variables or secrets managers.
+
+2. **Least Privilege**: Create separate workers for different environments (dev, staging, prod).
+
+3. **Network Security**: Workers should only have outbound access to the Rediver API and targets.
+
+4. **Key Rotation**: Regularly rotate API keys using the regenerate function.
+
+5. **Audit Logs**: Monitor worker activity in **Settings > Audit Log**.
+
+---
+
+## Related Documentation
+
+- [Deployment Modes](../architecture/deployment-modes.md)
+- [Server-Agent Architecture](../architecture/server-agent-command.md)
+- [SDK Development Guide](./sdk-development.md)
+- [API Reference](../api/reference.md)

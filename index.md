@@ -36,8 +36,9 @@ Continuous Threat Exposure Management Platform
 ## Guides
 
 - [Authentication](docs/guides/authentication) - Login flow, JWT, sessions
-- [Multi-tenancy](docs/guides/multi-tenancy) - Teams, tenant switching  
+- [Multi-tenancy](docs/guides/multi-tenancy) - Teams, tenant switching
 - [Permissions](docs/guides/permissions) - Role-based access control
+- [Running Workers](docs/guides/running-workers) - Configure and run scanners, agents
 
 ---
 

@@ -1,0 +1,445 @@
+---
+layout: default
+---
+# Docker Deployment Guide
+
+Deploy and run Rediver Agent using Docker for consistent, reproducible security scanning.
+
+---
+
+## Docker Images
+
+The Rediver Agent is available in three variants:
+
+| Image | Tag | Description | Use Case |
+|-------|-----|-------------|----------|
+| Full | `latest` | All tools included (semgrep, gitleaks, trivy) | Production, general use |
+| Slim | `slim` | Minimal, tools mounted from host | Size-constrained environments |
+| CI | `ci` | Optimized for CI/CD pipelines | GitHub Actions, GitLab CI |
+
+### Pull Images
+
+```bash
+# Full image (recommended)
+docker pull ghcr.io/rediverio/rediver-agent:latest
+
+# Slim image
+docker pull ghcr.io/rediverio/rediver-agent:slim
+
+# CI-optimized image
+docker pull ghcr.io/rediverio/rediver-agent:ci
+```
+
+---
+
+## Quick Start
+
+### Scan Local Directory
+
+```bash
+# Scan current directory with all tools
+docker run --rm -v $(pwd):/scan ghcr.io/rediverio/rediver-agent:latest \
+    -tools semgrep,gitleaks,trivy -target /scan -verbose
+
+# Scan specific directory
+docker run --rm -v /path/to/project:/scan ghcr.io/rediverio/rediver-agent:latest \
+    -tool semgrep -target /scan
+
+# Push results to Rediver platform
+docker run --rm -v $(pwd):/scan \
+    -e REDIVER_API_URL=https://api.rediver.io \
+    -e REDIVER_API_KEY=your-api-key \
+    ghcr.io/rediverio/rediver-agent:latest \
+    -tools semgrep,gitleaks,trivy -target /scan -push
+```
+
+### Check Tool Installation
+
+```bash
+docker run --rm ghcr.io/rediverio/rediver-agent:latest -check-tools
+```
+
+Output:
+```
+Checking scanner tools installation...
+
+  ✓ semgrep      SAST scanner with dataflow/taint tracking (installed: 1.56.0)
+  ✓ gitleaks     Secret detection scanner (installed: 8.28.0)
+  ✓ trivy        SCA/Container/IaC scanner (installed: 0.67.2)
+
+All tools are installed! Ready to scan.
+```
+
+---
+
+## Image Details
+
+### Full Image (`latest`)
+
+The full image includes:
+- **rediver-agent** binary
+- **semgrep** - SAST with dataflow/taint tracking
+- **gitleaks** - Secret detection
+- **trivy** - SCA, container, and IaC scanning
+- **git** - For repository operations
+
+```dockerfile
+# Base: python:3.12-slim
+# Size: ~500MB
+# User: non-root (rediver)
+```
+
+**Usage:**
+```bash
+docker run --rm -v $(pwd):/scan ghcr.io/rediverio/rediver-agent:latest \
+    -tools semgrep,gitleaks,trivy -target /scan
+```
+
+### Slim Image (`slim`)
+
+Minimal image with only the agent binary. Tools must be mounted from host.
+
+```dockerfile
+# Base: gcr.io/distroless/static-debian12:nonroot
+# Size: ~20MB
+# User: non-root
+```
+
+**Usage:**
+```bash
+# Mount tools from host
+docker run --rm \
+    -v $(pwd):/scan \
+    -v /usr/local/bin/semgrep:/usr/local/bin/semgrep:ro \
+    -v /usr/local/bin/gitleaks:/usr/local/bin/gitleaks:ro \
+    -v /usr/local/bin/trivy:/usr/local/bin/trivy:ro \
+    ghcr.io/rediverio/rediver-agent:slim \
+    -tools semgrep,gitleaks,trivy -target /scan
+```
+
+### CI Image (`ci`)
+
+Optimized for CI/CD pipelines with:
+- Pre-downloaded Trivy vulnerability database
+- Git safe directory configured
+- CI environment variables ready
+
+```dockerfile
+# Base: python:3.12-slim
+# Size: ~600MB (includes trivy DB cache)
+# User: root (for CI compatibility)
+```
+
+**Usage:**
+```bash
+docker run --rm \
+    -v $(pwd):/github/workspace \
+    -e GITHUB_ACTIONS=true \
+    -e GITHUB_TOKEN=$GITHUB_TOKEN \
+    ghcr.io/rediverio/rediver-agent:ci \
+    -tools semgrep,gitleaks,trivy -target . -auto-ci
+```
+
+---
+
+## Docker Compose
+
+Use docker-compose for local development and testing.
+
+### docker-compose.yml
+
+```yaml
+services:
+  scan:
+    image: ghcr.io/rediverio/rediver-agent:latest
+    volumes:
+      - ./:/scan:ro
+      - scan-cache:/cache
+    environment:
+      - REDIVER_API_URL=${REDIVER_API_URL:-}
+      - REDIVER_API_KEY=${REDIVER_API_KEY:-}
+    working_dir: /scan
+    command: ["-tools", "semgrep,gitleaks,trivy", "-target", "/scan", "-verbose"]
+
+  agent:
+    image: ghcr.io/rediverio/rediver-agent:latest
+    volumes:
+      - ./:/scan:ro
+      - ./config.yaml:/config/config.yaml:ro
+      - scan-cache:/cache
+    environment:
+      - REDIVER_API_URL=${REDIVER_API_URL}
+      - REDIVER_API_KEY=${REDIVER_API_KEY}
+    restart: unless-stopped
+    command: ["-daemon", "-config", "/config/config.yaml"]
+
+volumes:
+  scan-cache:
+```
+
+### Commands
+
+```bash
+# Run one-time scan
+docker compose run --rm scan
+
+# Start daemon agent
+docker compose up -d agent
+
+# View logs
+docker compose logs -f agent
+
+# Stop
+docker compose down
+```
+
+---
+
+## CI/CD Integration
+
+### GitHub Actions
+
+```yaml
+name: Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      security-events: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for diff-based scanning
+
+      - name: Run Rediver Security Scan
+        uses: docker://ghcr.io/rediverio/rediver-agent:ci
+        with:
+          args: >-
+            -tools semgrep,gitleaks,trivy
+            -target .
+            -auto-ci
+            -comments
+            -verbose
+            -json
+            -output /github/workspace/results.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REDIVER_API_URL: ${{ secrets.REDIVER_API_URL }}
+          REDIVER_API_KEY: ${{ secrets.REDIVER_API_KEY }}
+
+      - name: Upload Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-results
+          path: results.json
+```
+
+### GitLab CI
+
+```yaml
+stages:
+  - security
+
+security-scan:
+  stage: security
+  image: ghcr.io/rediverio/rediver-agent:ci
+  variables:
+    GIT_DEPTH: 0
+  script:
+    - |
+      rediver-agent \
+        -tools semgrep,gitleaks,trivy \
+        -target . \
+        -auto-ci \
+        -comments \
+        -verbose \
+        -json \
+        -output results.json
+  artifacts:
+    paths:
+      - results.json
+    reports:
+      sast: results.json
+    expire_in: 30 days
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+```
+
+### Jenkins
+
+```groovy
+pipeline {
+    agent {
+        docker {
+            image 'ghcr.io/rediverio/rediver-agent:ci'
+        }
+    }
+
+    environment {
+        REDIVER_API_URL = credentials('rediver-api-url')
+        REDIVER_API_KEY = credentials('rediver-api-key')
+    }
+
+    stages {
+        stage('Security Scan') {
+            steps {
+                sh '''
+                    rediver-agent \
+                        -tools semgrep,gitleaks,trivy \
+                        -target . \
+                        -verbose \
+                        -json \
+                        -output results.json
+                '''
+            }
+        }
+    }
+
+    post {
+        always {
+            archiveArtifacts artifacts: 'results.json', fingerprint: true
+        }
+    }
+}
+```
+
+---
+
+## Configuration
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `REDIVER_API_URL` | Rediver platform API URL | - |
+| `REDIVER_API_KEY` | API key for authentication | - |
+| `REDIVER_WORKER_ID` | Worker identifier | auto-generated |
+| `GITHUB_TOKEN` | GitHub token for PR comments | - |
+| `GITLAB_TOKEN` | GitLab token for MR comments | - |
+| `SEMGREP_SEND_METRICS` | Semgrep telemetry | `off` |
+| `TRIVY_CACHE_DIR` | Trivy cache directory | `/cache/trivy` |
+| `TRIVY_NO_PROGRESS` | Disable progress bar | `true` in CI |
+
+### Volume Mounts
+
+| Mount | Purpose | Recommended |
+|-------|---------|-------------|
+| `/scan` | Source code to scan | Required |
+| `/config` | Configuration files | Optional |
+| `/cache` | Persistent cache (trivy DB) | Recommended |
+| `/output` | Output files | Optional |
+
+### Example with All Options
+
+```bash
+docker run --rm \
+    -v $(pwd):/scan:ro \
+    -v $(pwd)/config.yaml:/config/config.yaml:ro \
+    -v rediver-cache:/cache \
+    -v $(pwd)/output:/output \
+    -e REDIVER_API_URL=https://api.rediver.io \
+    -e REDIVER_API_KEY=your-api-key \
+    -e REDIVER_WORKER_ID=scanner-001 \
+    ghcr.io/rediverio/rediver-agent:latest \
+    -config /config/config.yaml \
+    -target /scan \
+    -push \
+    -json \
+    -output /output/results.json
+```
+
+---
+
+## Building Custom Images
+
+### Extend the Base Image
+
+```dockerfile
+FROM ghcr.io/rediverio/rediver-agent:latest
+
+# Add custom tools
+RUN apt-get update && apt-get install -y \
+    your-custom-tool \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add custom configuration
+COPY your-config.yaml /config/
+
+# Set default command
+CMD ["-daemon", "-config", "/config/your-config.yaml"]
+```
+
+### Build from Source
+
+```bash
+# Clone repository
+git clone https://github.com/rediverio/rediver-sdk.git
+cd rediver-sdk
+
+# Build images
+make docker-all
+
+# Or build specific image
+docker build -t my-rediver-agent:latest -f docker/Dockerfile .
+```
+
+---
+
+## Troubleshooting
+
+### Permission Denied
+
+```bash
+# Run with specific user
+docker run --rm --user $(id -u):$(id -g) -v $(pwd):/scan ...
+
+# Or use root (not recommended for production)
+docker run --rm --user root -v $(pwd):/scan ...
+```
+
+### Git Safe Directory Error
+
+```bash
+# Add safe directory inside container
+docker run --rm -v $(pwd):/scan ghcr.io/rediverio/rediver-agent:latest \
+    sh -c "git config --global --add safe.directory /scan && rediver-agent -tool semgrep -target /scan"
+```
+
+### Trivy Database Update
+
+```bash
+# Force update trivy database
+docker run --rm -v trivy-cache:/cache ghcr.io/rediverio/rediver-agent:latest \
+    sh -c "trivy image --download-db-only"
+```
+
+### Network Issues
+
+```bash
+# Use host network
+docker run --rm --network host -v $(pwd):/scan ...
+
+# Or specify DNS
+docker run --rm --dns 8.8.8.8 -v $(pwd):/scan ...
+```
+
+---
+
+## Related Documentation
+
+- [SDK Development Guide](./sdk-development.md) - Building custom scanners
+- [CI Environment Detection](./sdk-development.md#ci-environment-detection) - Auto-detection features
+- [Handler Pattern](./sdk-development.md#handler-pattern) - Scan lifecycle management
+- [Authentication Guide](./authentication.md) - API key management
