@@ -3,26 +3,29 @@ layout: default
 ---
 # Rediver SDK Development Guide
 
-This guide shows how to use the **rediver-sdk** to build custom scanners, collectors, and agents.
+This guide shows how to use the **sdk** to build custom scanners, collectors, and agents.
 
 ---
 
 ## Overview
 
-The `rediver-sdk` provides a complete toolkit for building security scanning and data collection tools that integrate with Rediver. Key features:
+The `sdk` provides a complete toolkit for building security scanning and data collection tools that integrate with Rediver. Key features:
 
 - **Base implementations** - Extend `BaseScanner`, `BaseCollector`, `BaseAgent` for rapid development
 - **Preset scanners** - Ready-to-use configurations for popular tools
 - **Parser registry** - Built-in SARIF and JSON parsers with plugin support
 - **RIS types** - Complete type definitions for Rediver Ingest Schema
 - **Push/Pull modes** - Support for both agent-based and collector-based architectures
+- **Retry queue** - Automatic retry with disk persistence for offline resilience
+- **Shared packages** - Unified fingerprint and severity algorithms (shared with backend)
+- **Deduplication** - Fingerprint-based deduplication with server-side verification
 
 ---
 
 ## Installation
 
 ```bash
-go get github.com/rediverio/rediver-sdk
+go get github.com/rediverio/sdk
 ```
 
 ---
@@ -38,7 +41,7 @@ import (
     "context"
     "fmt"
 
-    "github.com/rediverio/rediver-sdk/pkg/core"
+    "github.com/rediverio/sdk/pkg/core"
 )
 
 func main() {
@@ -105,7 +108,7 @@ import (
     "context"
     "time"
 
-    "github.com/rediverio/rediver-sdk/pkg/core"
+    "github.com/rediverio/sdk/pkg/core"
 )
 
 func main() {
@@ -151,7 +154,7 @@ import (
     "fmt"
     "time"
 
-    "github.com/rediverio/rediver-sdk/pkg/core"
+    "github.com/rediverio/sdk/pkg/core"
 )
 
 // MyScanner extends BaseScanner with custom logic
@@ -266,8 +269,8 @@ import (
     "context"
     "encoding/json"
 
-    "github.com/rediverio/rediver-sdk/pkg/core"
-    "github.com/rediverio/rediver-sdk/pkg/ris"
+    "github.com/rediverio/sdk/pkg/core"
+    "github.com/rediverio/sdk/pkg/ris"
 )
 
 // MyToolParser parses output from my-tool
@@ -452,8 +455,8 @@ import (
     "syscall"
     "time"
 
-    "github.com/rediverio/rediver-sdk/pkg/client"
-    "github.com/rediverio/rediver-sdk/pkg/core"
+    "github.com/rediverio/sdk/pkg/client"
+    "github.com/rediverio/sdk/pkg/core"
 )
 
 func main() {
@@ -522,16 +525,16 @@ The SDK includes a ready-to-use CLI:
 
 ```bash
 # Build
-go build -o rediver-agent ./cmd/rediver-agent
+go build -o agent ./cmd/agent
 
 # Run single scan
-./rediver-agent -tool semgrep -target /path/to/project -api-url https://api.rediver.io -api-key $API_KEY
+./agent -tool semgrep -target /path/to/project -api-url https://api.rediver.io -api-key $API_KEY
 
 # Run as daemon with config file
-./rediver-agent -daemon -config config.yaml
+./agent -daemon -config config.yaml
 
 # List available tools
-./rediver-agent -list-tools
+./agent -list-tools
 ```
 
 **Example config.yaml:**
@@ -575,7 +578,7 @@ targets:
 ### Creating Reports Programmatically
 
 ```go
-import "github.com/rediverio/rediver-sdk/pkg/ris"
+import "github.com/rediverio/sdk/pkg/ris"
 
 // Create new report
 report := ris.NewReport()
@@ -629,7 +632,7 @@ report.Findings = append(report.Findings, ris.Finding{
 ### Converting SARIF to RIS
 
 ```go
-import "github.com/rediverio/rediver-sdk/pkg/ris"
+import "github.com/rediverio/sdk/pkg/ris"
 
 sarifData := []byte(`{"version": "2.1.0", ...}`)
 
@@ -687,8 +690,8 @@ import (
     "context"
     "fmt"
 
-    "github.com/rediverio/rediver-sdk/pkg/core"
-    "github.com/rediverio/rediver-sdk/pkg/ris"
+    "github.com/rediverio/sdk/pkg/core"
+    "github.com/rediverio/sdk/pkg/ris"
 )
 
 func main() {
@@ -725,7 +728,7 @@ func main() {
 ## Pushing Results to Rediver
 
 ```go
-import "github.com/rediverio/rediver-sdk/pkg/client"
+import "github.com/rediverio/sdk/pkg/client"
 
 // Create API client
 c := client.New(&client.Config{
@@ -838,8 +841,8 @@ import (
     "syscall"
     "time"
 
-    "github.com/rediverio/rediver-sdk/pkg/client"
-    "github.com/rediverio/rediver-sdk/pkg/core"
+    "github.com/rediverio/sdk/pkg/client"
+    "github.com/rediverio/sdk/pkg/core"
 )
 
 func main() {
@@ -920,8 +923,8 @@ The Processor provides a complete scan-parse-push workflow.
 
 ```go
 import (
-    "github.com/rediverio/rediver-sdk/pkg/client"
-    "github.com/rediverio/rediver-sdk/pkg/core"
+    "github.com/rediverio/sdk/pkg/client"
+    "github.com/rediverio/sdk/pkg/core"
 )
 
 // Create API client
@@ -981,7 +984,7 @@ type Logger interface {
 
 ```go
 import (
-    "github.com/rediverio/rediver-sdk/pkg/core"
+    "github.com/rediverio/sdk/pkg/core"
     "github.com/sirupsen/logrus"
 )
 
@@ -1040,7 +1043,7 @@ Validate configurations before use.
 ### Using the Validator
 
 ```go
-import "github.com/rediverio/rediver-sdk/pkg/core"
+import "github.com/rediverio/sdk/pkg/core"
 
 // Validate scanner config
 err := core.ValidateBaseScannerConfig(&core.BaseScannerConfig{
@@ -1114,7 +1117,7 @@ Host: api.rediver.io
 Content-Type: application/json
 Authorization: Bearer rs_src_xxxxxxxxxxxxxxxxxxxxxxxx
 X-Rediver-Source-ID: src_abc123def456
-User-Agent: rediver-sdk/1.0
+User-Agent: sdk/1.0
 ```
 
 ### Registering a Source
@@ -1149,7 +1152,7 @@ The SDK can auto-detect CI environments (GitHub Actions, GitLab CI) and provide 
 ### Auto-Detection
 
 ```go
-import "github.com/rediverio/rediver-sdk/pkg/gitenv"
+import "github.com/rediverio/sdk/pkg/gitenv"
 
 // Auto-detect CI environment
 ci := gitenv.Detect()
@@ -1220,8 +1223,8 @@ Automatically determine whether to scan all files or only changed files based on
 
 ```go
 import (
-    "github.com/rediverio/rediver-sdk/pkg/gitenv"
-    "github.com/rediverio/rediver-sdk/pkg/strategy"
+    "github.com/rediverio/sdk/pkg/gitenv"
+    "github.com/rediverio/sdk/pkg/strategy"
 )
 
 // Detect CI environment
@@ -1300,7 +1303,7 @@ type ScanHandler interface {
 ### Console Handler (Local Development)
 
 ```go
-import "github.com/rediverio/rediver-sdk/pkg/handler"
+import "github.com/rediverio/sdk/pkg/handler"
 
 // Simple handler that prints to console
 h := handler.NewConsoleHandler(true) // verbose=true
@@ -1320,8 +1323,8 @@ h.OnCompleted()
 
 ```go
 import (
-    "github.com/rediverio/rediver-sdk/pkg/client"
-    "github.com/rediverio/rediver-sdk/pkg/handler"
+    "github.com/rediverio/sdk/pkg/client"
+    "github.com/rediverio/sdk/pkg/handler"
 )
 
 // Create API client
@@ -1410,8 +1413,8 @@ The SDK includes native scanner implementations with full parsing support.
 
 ```go
 import (
-    "github.com/rediverio/rediver-sdk/pkg/scanners"
-    "github.com/rediverio/rediver-sdk/pkg/scanners/semgrep"
+    "github.com/rediverio/sdk/pkg/scanners"
+    "github.com/rediverio/sdk/pkg/scanners/semgrep"
 )
 
 // Create scanner with defaults
@@ -1455,8 +1458,8 @@ for _, f := range report.Findings {
 
 ```go
 import (
-    "github.com/rediverio/rediver-sdk/pkg/scanners"
-    "github.com/rediverio/rediver-sdk/pkg/scanners/gitleaks"
+    "github.com/rediverio/sdk/pkg/scanners"
+    "github.com/rediverio/sdk/pkg/scanners/gitleaks"
 )
 
 // Create scanner with defaults
@@ -1491,8 +1494,8 @@ report, _ := parser.Parse(ctx, genericResult.RawOutput, nil)
 
 ```go
 import (
-    "github.com/rediverio/rediver-sdk/pkg/scanners"
-    "github.com/rediverio/rediver-sdk/pkg/scanners/trivy"
+    "github.com/rediverio/sdk/pkg/scanners"
+    "github.com/rediverio/sdk/pkg/scanners/trivy"
 )
 
 // Create scanner with defaults (filesystem mode, vulnerability scanning)
@@ -1609,7 +1612,7 @@ for _, vuln := range result.Vulnerabilities {
 ### Scanner Registry
 
 ```go
-import "github.com/rediverio/rediver-sdk/pkg/scanners"
+import "github.com/rediverio/sdk/pkg/scanners"
 
 // Create registry with all built-in scanners
 registry := scanners.NewRegistry()
@@ -1642,12 +1645,12 @@ import (
     "fmt"
     "os"
 
-    "github.com/rediverio/rediver-sdk/pkg/client"
-    "github.com/rediverio/rediver-sdk/pkg/gitenv"
-    "github.com/rediverio/rediver-sdk/pkg/handler"
-    "github.com/rediverio/rediver-sdk/pkg/scanners"
-    "github.com/rediverio/rediver-sdk/pkg/scanners/semgrep"
-    "github.com/rediverio/rediver-sdk/pkg/strategy"
+    "github.com/rediverio/sdk/pkg/client"
+    "github.com/rediverio/sdk/pkg/gitenv"
+    "github.com/rediverio/sdk/pkg/handler"
+    "github.com/rediverio/sdk/pkg/scanners"
+    "github.com/rediverio/sdk/pkg/scanners/semgrep"
+    "github.com/rediverio/sdk/pkg/strategy"
 )
 
 func main() {
@@ -1711,6 +1714,237 @@ func main() {
 
 ---
 
+## Retry Queue (Offline Resilience)
+
+The SDK includes a built-in retry queue for handling failed uploads. This ensures data is not lost during network outages or server unavailability.
+
+### How It Works
+
+1. When a push fails, findings are automatically queued to disk
+2. A background worker periodically retries failed uploads
+3. Before retrying, it checks with the server if data already exists (deduplication)
+4. Successfully uploaded data is removed from the queue
+
+### Basic Usage
+
+```go
+import (
+    "github.com/rediverio/sdk/pkg/client"
+    "github.com/rediverio/sdk/pkg/retry"
+)
+
+// Create client with retry enabled
+c := client.New(&client.Config{
+    BaseURL:       "https://api.rediver.io",
+    APIKey:        os.Getenv("REDIVER_API_KEY"),
+    RetryEnabled:  true,                        // Enable retry queue
+    RetryQueueDir: "/var/lib/rediver/queue",    // Queue storage path
+})
+
+// Push findings - automatically queued on failure
+result, err := c.PushFindings(ctx, report)
+if err != nil {
+    // Data is queued for retry, not lost
+    log.Printf("Push failed, queued for retry: %v", err)
+}
+
+// Graceful shutdown - wait for pending uploads
+defer c.Close()
+```
+
+### Manual Queue Management
+
+```go
+import "github.com/rediverio/sdk/pkg/retry"
+
+// Create queue directly
+queue, _ := retry.NewFileQueue(&retry.FileQueueConfig{
+    StoragePath:   "/var/lib/rediver/queue",
+    MaxItems:      10000,
+    MaxItemAge:    7 * 24 * time.Hour, // 7 days
+    FlushInterval: 5 * time.Second,
+})
+
+// Add item to queue
+queue.Enqueue(&retry.QueueItem{
+    Type:        retry.ItemTypeFinding,
+    Data:        jsonData,
+    Fingerprint: "sha256hash...",
+    CreatedAt:   time.Now(),
+})
+
+// Start retry worker
+worker := retry.NewRetryWorker(&retry.RetryWorkerConfig{
+    Queue:             queue,
+    Client:            apiClient,
+    RetryInterval:     5 * time.Minute,
+    MaxRetries:        10,
+    BackoffMultiplier: 2.0,
+    MaxBackoff:        1 * time.Hour,
+})
+
+worker.Start(ctx)
+defer worker.Stop()
+```
+
+### Queue Item Types
+
+| Type | Description |
+|------|-------------|
+| `ItemTypeFinding` | Security findings |
+| `ItemTypeAsset` | Asset information |
+| `ItemTypeBatch` | Batch of multiple items |
+
+### Backoff Strategy
+
+The retry worker uses exponential backoff with jitter:
+
+```
+Wait time = min(initialInterval * multiplier^attempts + jitter, maxBackoff)
+```
+
+Default configuration:
+- Initial interval: 5 minutes
+- Multiplier: 2.0
+- Max backoff: 1 hour
+- Jitter: ±10%
+
+---
+
+## Fingerprint Deduplication
+
+The SDK uses fingerprints to deduplicate findings. Both SDK and backend use the same algorithm from the shared package.
+
+### Shared Fingerprint Package
+
+```go
+import "github.com/rediverio/sdk/pkg/shared/fingerprint"
+
+// Generate fingerprint based on finding type
+fp := fingerprint.Generate(fingerprint.Input{
+    Type:      fingerprint.TypeSAST,
+    FilePath:  "src/main.go",
+    RuleID:    "CWE-89",
+    StartLine: 42,
+    EndLine:   44,
+})
+
+// Auto-detect type based on available fields
+fp := fingerprint.GenerateAuto(fingerprint.Input{
+    FilePath:        "package.json",
+    PackageName:     "lodash",
+    PackageVersion:  "4.17.20",
+    VulnerabilityID: "CVE-2021-23337",
+})
+```
+
+### Finding Types and Algorithms
+
+| Type | Algorithm | Fields Used |
+|------|-----------|-------------|
+| `TypeSAST` | `sha256(sast:file:rule:startLine:endLine)` | FilePath, RuleID, StartLine, EndLine |
+| `TypeSCA` | `sha256(sca:pkg:version:vulnID)` | PackageName, PackageVersion, VulnerabilityID |
+| `TypeSecret` | `sha256(secret:file:rule:line:secretHash)` | FilePath, RuleID, StartLine, SecretValue |
+| `TypeMisconfiguration` | `sha256(misconfig:type:name:rule:file)` | ResourceType, ResourceName, RuleID, FilePath |
+| `TypeGeneric` | `sha256(generic:rule:file:start:end:message)` | RuleID, FilePath, StartLine, EndLine, Message |
+
+### Convenience Functions
+
+```go
+// SAST findings
+fp := fingerprint.GenerateSAST("src/db.go", "CWE-89", 42, 44)
+
+// SCA findings
+fp := fingerprint.GenerateSCA("lodash", "4.17.20", "CVE-2021-23337")
+
+// Secret findings
+fp := fingerprint.GenerateSecret("config.yaml", "api-key", 10, "sk_live_xxx")
+
+// Misconfiguration findings
+fp := fingerprint.GenerateMisconfiguration("aws_s3_bucket", "my-bucket", "S3-PUBLIC", "main.tf")
+```
+
+### CheckFingerprints API
+
+Before retrying uploads, check if data already exists:
+
+```go
+// Check which fingerprints already exist on server
+result, err := client.CheckFingerprints(ctx, []string{
+    "abc123...",
+    "def456...",
+    "ghi789...",
+})
+
+// result.Existing = fingerprints that already exist
+// result.Missing = fingerprints that need to be uploaded
+
+// Only upload missing data
+for _, fp := range result.Missing {
+    uploadFinding(findingsByFingerprint[fp])
+}
+```
+
+---
+
+## Severity Normalization
+
+The SDK provides unified severity mapping across different scanner formats.
+
+### Shared Severity Package
+
+```go
+import "github.com/rediverio/sdk/pkg/shared/severity"
+
+// Parse severity from various formats
+level := severity.FromString("HIGH")      // From Trivy
+level := severity.FromString("ERROR")     // From Semgrep
+level := severity.FromString("CRITICAL")  // Standard
+
+// Convert CVSS score to severity
+level := severity.FromCVSS(9.8)  // Returns severity.Critical
+
+// Compare severities
+if severity.Critical.IsHigherThan(severity.High) {
+    // true
+}
+
+// Get priority for sorting
+priority := level.Priority()  // Critical=5, High=4, Medium=3, Low=2, Info=1
+
+// Get CVSS range for severity
+min, max := severity.High.ToCVSSRange()  // 7.0, 9.0
+```
+
+### Severity Levels
+
+| Level | Priority | CVSS Range | Scanner Mappings |
+|-------|----------|------------|------------------|
+| `Critical` | 5 | 9.0-10.0 | CRITICAL, CRIT |
+| `High` | 4 | 7.0-8.9 | HIGH, ERROR, SEVERE |
+| `Medium` | 3 | 4.0-6.9 | MEDIUM, MODERATE, WARNING, WARN |
+| `Low` | 2 | 0.1-3.9 | LOW |
+| `Info` | 1 | 0.0 | INFO, INFORMATIONAL, NOTE, NONE |
+| `Unknown` | 0 | - | Unknown/unmapped values |
+
+### Counting by Severity
+
+```go
+counts := &severity.CountBySeverity{}
+
+for _, finding := range findings {
+    level := severity.FromString(finding.Severity)
+    counts.Increment(level)
+}
+
+fmt.Printf("Critical: %d, High: %d, Total: %d\n",
+    counts.Critical, counts.High, counts.Total)
+
+highest := counts.HighestSeverity()  // Returns highest non-zero severity
+```
+
+---
+
 ## Docker Deployment
 
 The SDK provides Docker images for easy deployment. See the [Docker Deployment Guide](./docker-deployment.md) for full details.
@@ -1719,20 +1953,20 @@ The SDK provides Docker images for easy deployment. See the [Docker Deployment G
 
 ```bash
 # Run scan with Docker
-docker run --rm -v $(pwd):/scan ghcr.io/rediverio/rediver-agent:latest \
+docker run --rm -v $(pwd):/scan ghcr.io/rediverio/agent:latest \
     -tools semgrep,gitleaks,trivy -target /scan -verbose
 
 # Check tools
-docker run --rm ghcr.io/rediverio/rediver-agent:latest -check-tools
+docker run --rm ghcr.io/rediverio/agent:latest -check-tools
 ```
 
 ### Available Images
 
 | Image | Description |
 |-------|-------------|
-| `ghcr.io/rediverio/rediver-agent:latest` | Full image with all tools |
-| `ghcr.io/rediverio/rediver-agent:slim` | Minimal (tools mounted) |
-| `ghcr.io/rediverio/rediver-agent:ci` | CI/CD optimized |
+| `ghcr.io/rediverio/agent:latest` | Full image with all tools |
+| `ghcr.io/rediverio/agent:slim` | Minimal (tools mounted) |
+| `ghcr.io/rediverio/agent:ci` | CI/CD optimized |
 
 ---
 
@@ -1751,7 +1985,7 @@ docker run --rm ghcr.io/rediverio/rediver-agent:latest -check-tools
 
 Full working examples are available in the SDK repository:
 
-- [`examples/custom-scanner`](https://github.com/rediverio/rediver-sdk/tree/main/examples/custom-scanner) - Custom scanner implementation
-- [`examples/semgrep-test`](https://github.com/rediverio/rediver-sdk/tree/main/examples/semgrep-test) - Semgrep scanner integration
-- [`examples/integration-test`](https://github.com/rediverio/rediver-sdk/tree/main/examples/integration-test) - API client integration
-- [`cmd/rediver-agent`](https://github.com/rediverio/rediver-sdk/tree/main/cmd/rediver-agent) - CLI agent
+- [`examples/custom-scanner`](https://github.com/rediverio/sdk/tree/main/examples/custom-scanner) - Custom scanner implementation
+- [`examples/semgrep-test`](https://github.com/rediverio/sdk/tree/main/examples/semgrep-test) - Semgrep scanner integration
+- [`examples/integration-test`](https://github.com/rediverio/sdk/tree/main/examples/integration-test) - API client integration
+- [`cmd/agent`](https://github.com/rediverio/sdk/tree/main/cmd/agent) - CLI agent

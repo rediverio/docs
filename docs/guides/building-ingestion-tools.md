@@ -407,8 +407,8 @@ RIS can convert SARIF output from popular tools:
 
 ```go
 import (
-    "github.com/rediverio/rediver/pkg/parsers/ris"
-    "github.com/rediverio/rediver/pkg/parsers/sarif"
+    "github.com/rediverio/api/pkg/parsers/ris"
+    "github.com/rediverio/api/pkg/parsers/sarif"
 )
 
 // Parse SARIF
@@ -436,7 +436,7 @@ risReport := ris.FromSARIF(sarifLog, &ris.SARIFConvertOptions{
 package main
 
 import (
-    "github.com/rediverio/rediver/pkg/parsers/ris"
+    "github.com/rediverio/api/pkg/parsers/ris"
 )
 
 func main() {
@@ -476,7 +476,7 @@ func main() {
 package main
 
 import (
-    "github.com/rediverio/rediver/pkg/parsers/ris"
+    "github.com/rediverio/api/pkg/parsers/ris"
 )
 
 func buildWeb3Finding() ris.Finding {
@@ -841,7 +841,7 @@ import (
     "os"
     "os/exec"
 
-    "github.com/rediverio/rediver/pkg/parsers/ris"
+    "github.com/rediverio/api/pkg/parsers/ris"
 )
 
 func main() {
@@ -901,6 +901,6 @@ func pushToRediver(report *ris.Report, apiKey string) error {
 
 ## Related Documentation
 
-- [Data Sources Architecture](../../rediver-api/docs/architecture/data-sources.md)
+- [Data Sources Architecture](../../api/docs/architecture/data-sources.md)
 - [API Reference](../api/reference.md)
 - [Authentication Guide](./authentication.md)

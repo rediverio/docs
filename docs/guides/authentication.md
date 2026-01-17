@@ -188,7 +188,7 @@ Authorization: Bearer <access_token>
 |--------|:--------:|:------:|:--------:|---------|
 | `refresh_token` | ✅ | Production | Lax | 7 days |
 | `access_token` | ✅ | Production | Lax | 15 min |
-| `rediver_tenant` | ❌ | Production | Lax | 7 days |
+| `app_tenant` | ❌ | Production | Lax | 7 days |
 | `csrf_token` | ❌ | Production | Lax | Session |
 
 ### CSRF Protection
@@ -217,7 +217,7 @@ Double-submit cookie pattern:
   "permissions": ["assets:read", "assets:write"],
   "exp": 1234567890,
   "iat": 1234567890,
-  "iss": "rediver-api"
+  "iss": "api"
 }
 ```
 

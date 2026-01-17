@@ -6,11 +6,11 @@ Thank you for your interest in contributing to ReDiver! This document provides g
 
 | Repository | Description |
 |------------|-------------|
-| [rediver-api](https://github.com/rediverio/rediver-api) | Backend (Go) |
-| [rediver-ui](https://github.com/rediverio/rediver-ui) | Frontend (Next.js) |
-| [rediver-keycloak](https://github.com/rediverio/rediver-keycloak) | Keycloak Config |
-| [rediver-schemas](https://github.com/rediverio/rediver-schemas) | Database Schemas |
-| [rediver-docs](https://github.com/rediverio/rediver-docs) | Documentation |
+| [api](https://github.com/rediverio/api) | Backend (Go) |
+| [ui](https://github.com/rediverio/ui) | Frontend (Next.js) |
+| [keycloak](https://github.com/rediverio/keycloak) | Keycloak Config |
+| [schemas](https://github.com/rediverio/schemas) | Database Schemas |
+| [docs](https://github.com/rediverio/docs) | Documentation |
 
 ## Development Workflow
 
@@ -67,6 +67,6 @@ chore: maintenance
 ## Getting Help
 
 - Check [Documentation](docs/getting-started.md)
-- Search [Issues](https://github.com/rediverio/rediver/issues)
-- Ask in [Discussions](https://github.com/rediverio/rediver/discussions)
+- Search [Issues](https://github.com/rediverio/api/issues)
+- Ask in [Discussions](https://github.com/rediverio/api/discussions)
 - Email: rediverio@gmail.com

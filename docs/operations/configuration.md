@@ -13,7 +13,7 @@ Complete reference for all environment variables across ReDiver services.
 | Frontend | `.env.local` | `.env.example` |
 | Keycloak | `.env.keycloak.dev` | `.env.keycloak.example` |
 
-## Backend (rediver-api)
+## Backend (api)
 
 ### Application
 
@@ -82,7 +82,7 @@ postgres://DB_USER:DB_PASSWORD@DB_HOST:DB_PORT/DB_NAME?sslmode=DB_SSLMODE
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `AUTH_JWT_SECRET` | Yes | - | JWT signing secret (min 32 chars) |
-| `AUTH_JWT_ISSUER` | No | `rediver-api` | JWT issuer claim |
+| `AUTH_JWT_ISSUER` | No | `api` | JWT issuer claim |
 | `AUTH_ACCESS_TOKEN_DURATION` | No | `15m` | Access token TTL |
 | `AUTH_REFRESH_TOKEN_DURATION` | No | `168h` | Refresh token TTL (7 days) |
 | `AUTH_SESSION_DURATION` | No | `720h` | Session TTL (30 days) |
@@ -157,7 +157,7 @@ postgres://DB_USER:DB_PASSWORD@DB_HOST:DB_PORT/DB_NAME?sslmode=DB_SSLMODE
 
 ---
 
-## Frontend (rediver-ui)
+## Frontend (ui)
 
 ### API Configuration
 
@@ -171,8 +171,8 @@ postgres://DB_USER:DB_PASSWORD@DB_HOST:DB_PORT/DB_NAME?sslmode=DB_SSLMODE
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `NEXT_PUBLIC_AUTH_PROVIDER` | Yes | `local` | Auth mode (must match backend) |
-| `NEXT_PUBLIC_AUTH_COOKIE_NAME` | No | `rediver_auth_token` | Auth token cookie name |
-| `NEXT_PUBLIC_REFRESH_COOKIE_NAME` | No | `rediver_refresh_token` | Refresh token cookie name |
+| `NEXT_PUBLIC_AUTH_COOKIE_NAME` | No | `auth_token` | Auth token cookie name |
+| `NEXT_PUBLIC_REFRESH_COOKIE_NAME` | No | `refresh_token` | Refresh token cookie name |
 | `COOKIE_MAX_AGE` | No | `604800` | Cookie max age (seconds) |
 
 ### Keycloak (OIDC)
@@ -214,7 +214,7 @@ postgres://DB_USER:DB_PASSWORD@DB_HOST:DB_PORT/DB_NAME?sslmode=DB_SSLMODE
 
 ---
 
-## Keycloak (rediver-keycloak)
+## Keycloak (keycloak)
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
@@ -238,17 +238,17 @@ postgres://DB_USER:DB_PASSWORD@DB_HOST:DB_PORT/DB_NAME?sslmode=DB_SSLMODE
 ### Development
 
 ```
-rediver-api/.env              # Backend development config
-rediver-ui/.env.local         # Frontend development config
-rediver-keycloak/.env.keycloak.dev  # Keycloak development config
+api/.env              # Backend development config
+ui/.env.local         # Frontend development config
+keycloak/.env.keycloak.dev  # Keycloak development config
 ```
 
 ### Production
 
 ```
-rediver-api/.env.production   # Backend production config
-rediver-ui/.env.production    # Frontend production config (build-time)
-rediver-ui/.env.production.local  # Frontend production secrets
+api/.env.production   # Backend production config
+ui/.env.production    # Frontend production config (build-time)
+ui/.env.production.local  # Frontend production secrets
 ```
 
 ---
@@ -275,7 +275,7 @@ openssl rand -base64 32
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 
 # Using npm script
-cd rediver-ui && npm run generate-secret
+cd ui && npm run generate-secret
 ```
 
 ### Database Password
@@ -336,7 +336,7 @@ SECURE_COOKIES=true
 
 ---
 
-## Nginx Reverse Proxy (rediver-setup)
+## Nginx Reverse Proxy (setup)
 
 Configuration for the nginx reverse proxy that serves both UI and API domains.
 
@@ -392,7 +392,7 @@ Place SSL certificates in `nginx/ssl/`:
 - `cert.pem` - Certificate chain
 - `key.pem` - Private key
 
-See `rediver-setup/nginx/README.md` for detailed SSL setup instructions.
+See `setup/nginx/README.md` for detailed SSL setup instructions.
 
 ---
 

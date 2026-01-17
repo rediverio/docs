@@ -31,11 +31,11 @@ cd rediver
 
 ```bash
 # Backend
-cd rediver-api
+cd api
 cp .env.example .env
 
 # Frontend
-cd ../rediver-ui
+cd ../ui
 cp .env.example .env.local
 
 # Return to root
@@ -73,7 +73,7 @@ Expected health response:
 ### Step 5: Database Migration & Seed
 
 ```bash
-cd rediver-api
+cd api
 
 # Run database migrations
 make docker-migrate-up
@@ -112,7 +112,7 @@ docker compose ps
 ### Step 2: Setup Backend
 
 ```bash
-cd rediver-api
+cd api
 
 # Copy environment file
 cp .env.example .env
@@ -140,7 +140,7 @@ Backend should now be running at http://localhost:8080
 Open a new terminal:
 
 ```bash
-cd rediver-ui
+cd ui
 
 # Copy environment file
 cp .env.example .env.local
@@ -255,7 +255,7 @@ docker compose restart postgres
 ## Getting Help
 
 - Check [Troubleshooting Guide](./operations/troubleshooting.md)
-- Search [GitHub Issues](https://github.com/rediverio/rediver/issues)
+- Search [GitHub Issues](https://github.com/rediverio/api/issues)
 - Create a new issue with:
   - OS and versions
   - Steps to reproduce

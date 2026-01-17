@@ -42,7 +42,7 @@ Consider implementing gRPC when:
 ### Directory Structure
 
 ```
-rediver-api/
+api/
 ├── api/
 │   └── proto/
 │       ├── common.proto       # Shared types
@@ -68,7 +68,7 @@ syntax = "proto3";
 
 package rediver.v1;
 
-option go_package = "github.com/rediverio/rediver/api/proto/v1";
+option go_package = "github.com/rediverio/api/api/proto/v1";
 
 import "google/protobuf/timestamp.proto";
 
@@ -122,7 +122,7 @@ syntax = "proto3";
 
 package rediver.v1;
 
-option go_package = "github.com/rediverio/rediver/api/proto/v1";
+option go_package = "github.com/rediverio/api/api/proto/v1";
 
 import "google/protobuf/timestamp.proto";
 import "common.proto";
@@ -207,7 +207,7 @@ syntax = "proto3";
 
 package rediver.v1;
 
-option go_package = "github.com/rediverio/rediver/api/proto/v1";
+option go_package = "github.com/rediverio/api/api/proto/v1";
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
@@ -299,7 +299,7 @@ syntax = "proto3";
 
 package rediver.v1;
 
-option go_package = "github.com/rediverio/rediver/api/proto/v1";
+option go_package = "github.com/rediverio/api/api/proto/v1";
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";

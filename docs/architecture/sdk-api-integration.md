@@ -101,7 +101,7 @@ Host: api.rediver.io
 Content-Type: application/json
 Authorization: Bearer rs_src_xxxxxxxxxxxxxxxxxxxxxxxx
 X-Rediver-Source-ID: src_abc123def456
-User-Agent: rediver-sdk/1.0
+User-Agent: sdk/1.0
 ```
 
 ### 3. Authentication Middleware

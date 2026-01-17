@@ -17,7 +17,7 @@ Workers are distributed components that execute security scans and push findings
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
 │  1. Create      │     │  2. Get API     │     │  3. Run         │
-│  Worker in UI   │────▶│  Key            │────▶│  rediver-agent  │
+│  Worker in UI   │────▶│  Key            │────▶│  agent  │
 │                 │     │                 │     │                 │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
                                                         │
@@ -78,14 +78,14 @@ If you didn't save the API key:
 ### Option A: Download Pre-built Binary
 ```bash
 # Download latest release
-curl -L https://github.com/rediverio/rediver/releases/latest/download/rediver-agent-linux-amd64 -o rediver-agent
-chmod +x rediver-agent
+curl -L https://github.com/rediverio/api/releases/latest/download/agent-linux-amd64 -o agent
+chmod +x agent
 ```
 
 ### Option B: Build from Source
 ```bash
-cd rediver-sdk
-go build -o rediver-agent ./cmd/rediver-agent
+cd sdk
+go build -o agent ./cmd/agent
 ```
 
 ### Option C: Docker
@@ -168,24 +168,24 @@ export REDIVER_WORKER_ID=76d81868-25cd-45e6-ba66-6adfda4d0573
 
 | Mode | Command | Push Behavior | Use Case |
 |------|---------|---------------|----------|
-| **One-Shot** | `./rediver-agent -tool X -push` | Manual (`-push` required) | CI/CD pipelines, ad-hoc scans |
-| **Daemon** | `./rediver-agent -daemon -config X` | Automatic | Continuous monitoring, servers |
+| **One-Shot** | `./agent -tool X -push` | Manual (`-push` required) | CI/CD pipelines, ad-hoc scans |
+| **Daemon** | `./agent -daemon -config X` | Automatic | Continuous monitoring, servers |
 
 ### One-Shot Mode (Single Scan)
 Run a single scan and exit:
 
 ```bash
 # Scan with a specific tool and push to Rediver
-./rediver-agent -tool trivy -target /path/to/project -push
+./agent -tool trivy -target /path/to/project -push
 
 # Scan with multiple tools
-./rediver-agent -tools semgrep,gitleaks,trivy -target . -push
+./agent -tools semgrep,gitleaks,trivy -target . -push
 
 # Using config file (IMPORTANT: add -push flag!)
-./rediver-agent -config agent.yaml -push
+./agent -config agent.yaml -push
 
 # Scan without pushing (dry run / local testing)
-./rediver-agent -tool semgrep -target . -output ./results.json
+./agent -tool semgrep -target . -output ./results.json
 ```
 
 > **IMPORTANT**: In one-shot mode, you MUST use the `-push` flag to send findings to Rediver. Without `-push`, findings are only displayed locally and not saved.
@@ -195,13 +195,13 @@ Run as a long-running service. In daemon mode, findings are **automatically push
 
 ```bash
 # Start with config file (auto-push enabled)
-./rediver-agent -daemon -config agent.yaml
+./agent -daemon -config agent.yaml
 
 # With verbose logging
-./rediver-agent -daemon -config agent.yaml -verbose
+./agent -daemon -config agent.yaml -verbose
 
 # Standalone mode (no server commands, still auto-pushes)
-./rediver-agent -daemon -config agent.yaml -standalone
+./agent -daemon -config agent.yaml -standalone
 ```
 
 > **Note**: In daemon mode, you don't need the `-push` flag. Findings are automatically pushed after each scheduled scan.
@@ -209,7 +209,7 @@ Run as a long-running service. In daemon mode, findings are **automatically push
 ### Docker
 ```bash
 docker run -d \
-  --name rediver-agent \
+  --name agent \
   -v /opt/code:/code:ro \
   -v ./agent.yaml:/app/agent.yaml \
   -e REDIVER_API_KEY=rdw_xxx \
@@ -218,7 +218,7 @@ docker run -d \
 ```
 
 ### Systemd Service
-Create `/etc/systemd/system/rediver-agent.service`:
+Create `/etc/systemd/system/agent.service`:
 
 ```ini
 [Unit]
@@ -230,7 +230,7 @@ Type=simple
 User=rediver
 Group=rediver
 WorkingDirectory=/opt/rediver
-ExecStart=/opt/rediver/rediver-agent -daemon -config /opt/rediver/agent.yaml
+ExecStart=/opt/rediver/agent -daemon -config /opt/rediver/agent.yaml
 Restart=always
 RestartSec=10
 Environment=REDIVER_API_KEY=rdw_xxx
@@ -242,8 +242,8 @@ WantedBy=multi-user.target
 Enable and start:
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable rediver-agent
-sudo systemctl start rediver-agent
+sudo systemctl enable agent
+sudo systemctl start agent
 ```
 
 ---
@@ -259,10 +259,10 @@ sudo systemctl start rediver-agent
 ### Check Agent Logs
 ```bash
 # Systemd
-journalctl -u rediver-agent -f
+journalctl -u agent -f
 
 # Docker
-docker logs -f rediver-agent
+docker logs -f agent
 ```
 
 You should see:
@@ -410,7 +410,7 @@ curl -X POST https://api.rediver.io/api/v1/commands \
 Workers are automatically marked as "Inactive" if they don't send a heartbeat within the configured timeout (default: 5 minutes).
 
 **Common causes:**
-- Agent is not running: `ps aux | grep rediver-agent`
+- Agent is not running: `ps aux | grep agent`
 - Agent crashed - check logs for errors
 - Network issues preventing heartbeat
 - API key is invalid or revoked
@@ -444,10 +444,10 @@ Workers are automatically marked as "Inactive" if they don't send a heartbeat wi
 
 ```bash
 # WRONG - findings only displayed locally
-./rediver-agent -config agent.yaml
+./agent -config agent.yaml
 
 # CORRECT - findings pushed to Rediver
-./rediver-agent -config agent.yaml -push
+./agent -config agent.yaml -push
 ```
 
 **Other causes:**

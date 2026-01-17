@@ -82,7 +82,7 @@ Create `.vscode/settings.json`:
 ### Install Go Tools
 
 ```bash
-cd rediver-api
+cd api
 
 # Install all development tools
 make install-tools
@@ -154,7 +154,7 @@ Create `.vscode/launch.json`:
       "type": "go",
       "request": "launch",
       "mode": "auto",
-      "program": "${workspaceFolder}/rediver-api/cmd/server",
+      "program": "${workspaceFolder}/api/cmd/server",
       "env": {
         "APP_ENV": "development"
       },
@@ -182,7 +182,7 @@ dlv attach <pid>
 ### Install Dependencies
 
 ```bash
-cd rediver-ui
+cd ui
 
 # Install packages
 npm install
@@ -248,7 +248,7 @@ Add to `.vscode/launch.json`:
       "type": "chrome",
       "request": "launch",
       "url": "http://localhost:3000",
-      "webRoot": "${workspaceFolder}/rediver-ui"
+      "webRoot": "${workspaceFolder}/ui"
     },
     {
       "name": "Debug Server Components",
@@ -256,7 +256,7 @@ Add to `.vscode/launch.json`:
       "request": "attach",
       "port": 9229,
       "restart": true,
-      "localRoot": "${workspaceFolder}/rediver-ui"
+      "localRoot": "${workspaceFolder}/ui"
     }
   ]
 }
@@ -277,7 +277,7 @@ Install Husky for Git hooks:
 
 ```bash
 # Frontend
-cd rediver-ui
+cd ui
 npm install -D husky lint-staged
 npx husky init
 
@@ -297,7 +297,7 @@ Create `.lintstagedrc.json`:
 ### Backend Linting
 
 ```bash
-cd rediver-api
+cd api
 
 # Run linter
 make lint
@@ -346,7 +346,7 @@ openssl rand -base64 48
 openssl rand -base64 32
 
 # Or use npm script
-cd rediver-ui
+cd ui
 npm run generate-secret
 ```
 
@@ -354,7 +354,7 @@ npm run generate-secret
 
 ```bash
 # Backend - check required vars
-cd rediver-api
+cd api
 go run cmd/server/main.go --validate-env
 
 # Frontend - Next.js will error on missing NEXT_PUBLIC_* vars
@@ -365,11 +365,11 @@ npm run build
 
 ### OpenAPI Spec
 
-Location: `rediver-api/api/openapi/`
+Location: `api/api/openapi/`
 
 ```bash
 # Generate types from OpenAPI
-cd rediver-api
+cd api
 make generate
 ```
 

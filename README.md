@@ -48,8 +48,8 @@ git clone https://github.com/rediverio/rediver.git
 cd rediver
 
 # Configure
-cd rediver-api && cp .env.example .env && cd ..
-cd rediver-ui && cp .env.example .env.local && cd ..
+cd api && cp .env.example .env && cd ..
+cd ui && cp .env.example .env.local && cd ..
 
 # Start with Docker
 docker compose up -d
@@ -98,12 +98,12 @@ If you find ReDiver useful, consider supporting the project:
 
 | Repository | Description |
 |------------|-------------|
-| [rediver-api](https://github.com/rediverio/rediver-api) | Backend REST API (Go) |
-| [rediver-ui](https://github.com/rediverio/rediver-ui) | Frontend Application (Next.js) |
-| [rediver-setup](https://github.com/rediverio/rediver-setup) | Deployment & Docker Compose |
-| [rediver-keycloak](https://github.com/rediverio/rediver-keycloak) | Keycloak Configuration |
-| [rediver-schemas](https://github.com/rediverio/rediver-schemas) | Database Schemas |
-| [rediver-docs](https://github.com/rediverio/rediver-docs) | Documentation |
+| [api](https://github.com/rediverio/api) | Backend REST API (Go) |
+| [ui](https://github.com/rediverio/ui) | Frontend Application (Next.js) |
+| [setup](https://github.com/rediverio/setup) | Deployment & Docker Compose |
+| [keycloak](https://github.com/rediverio/keycloak) | Keycloak Configuration |
+| [schemas](https://github.com/rediverio/schemas) | Database Schemas |
+| [docs](https://github.com/rediverio/docs) | Documentation |
 
 ---
 
@@ -117,4 +117,4 @@ If you find ReDiver useful, consider supporting the project:
 
 ## 📄 License
 
-MIT License - see [LICENSE](https://github.com/rediverio/rediver-api/blob/main/LICENSE)
+MIT License - see [LICENSE](https://github.com/rediverio/api/blob/main/LICENSE)

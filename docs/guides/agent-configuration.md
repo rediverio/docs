@@ -23,7 +23,7 @@ rediver:
 
 3. Run the agent:
 ```bash
-rediver-agent -config agent.yaml -daemon
+agent -config agent.yaml -daemon
 ```
 
 ---
@@ -195,23 +195,23 @@ rediver:
 
 ```bash
 # Single scan with config
-rediver-agent -config agent.yaml -target ./src
+agent -config agent.yaml -target ./src
 
 # Override scanners
-rediver-agent -config agent.yaml -tools semgrep,gitleaks -target .
+agent -config agent.yaml -tools semgrep,gitleaks -target .
 
 # Push results to platform
-rediver-agent -config agent.yaml -target . -push
+agent -config agent.yaml -target . -push
 ```
 
 ### Daemon Mode
 
 ```bash
 # Start daemon
-rediver-agent -config agent.yaml -daemon
+agent -config agent.yaml -daemon
 
 # Daemon with verbose logging
-rediver-agent -config agent.yaml -daemon -verbose
+agent -config agent.yaml -daemon -verbose
 ```
 
 ### Docker
@@ -221,7 +221,7 @@ rediver-agent -config agent.yaml -daemon -verbose
 docker run --rm \
   -v $(pwd):/scan \
   -v $(pwd)/agent.yaml:/config/agent.yaml \
-  rediverio/rediver-agent:latest \
+  rediverio/agent:latest \
   -config /config/agent.yaml -target /scan
 
 # With environment variables
@@ -229,7 +229,7 @@ docker run --rm \
   -v $(pwd):/scan \
   -e REDIVER_API_URL=https://api.rediver.io \
   -e REDIVER_API_KEY=your-key \
-  rediverio/rediver-agent:latest \
+  rediverio/agent:latest \
   -tools semgrep,gitleaks,trivy -target /scan -push
 ```
 
@@ -247,7 +247,7 @@ Configuration is applied in this order (later overrides earlier):
 **Example:**
 ```bash
 # api_key from config file is overridden by environment variable
-REDIVER_API_KEY=new-key rediver-agent -config agent.yaml
+REDIVER_API_KEY=new-key agent -config agent.yaml
 ```
 
 ---
@@ -257,14 +257,14 @@ REDIVER_API_KEY=new-key rediver-agent -config agent.yaml
 Validate configuration before running:
 
 ```bash
-rediver-agent -config agent.yaml -validate
+agent -config agent.yaml -validate
 ```
 
 Check available scanners:
 
 ```bash
-rediver-agent -list-tools
-rediver-agent -check-tools
+agent -list-tools
+agent -check-tools
 ```
 
 ---
@@ -287,4 +287,4 @@ chmod 600 agent.yaml
 
 - [Docker Deployment Guide](./docker-deployment.md)
 - [SDK Development Guide](./sdk-development.md)
-- [CI/CD Examples](https://github.com/rediverio/rediver-sdk/tree/main/examples/ci-cd)
+- [CI/CD Examples](https://github.com/rediverio/sdk/tree/main/examples/ci-cd)

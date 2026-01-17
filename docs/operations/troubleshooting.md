@@ -61,7 +61,7 @@ docker compose exec redis redis-cli ping
 
 **Solution:**
 ```bash
-cd rediver-ui
+cd ui
 
 # Remove existing modules
 rm -rf node_modules package-lock.json
@@ -79,7 +79,7 @@ npm install
 
 **Solution:**
 ```bash
-cd rediver-api
+cd api
 
 # Clear module cache
 go clean -modcache
@@ -217,7 +217,7 @@ Access to fetch at 'http://localhost:8080' from origin 'http://localhost:3000' h
 
 1. **Check CORS settings:**
    ```bash
-   # In rediver-api/.env
+   # In api/.env
    CORS_ALLOWED_ORIGINS=http://localhost:3000
    ```
 
@@ -250,7 +250,7 @@ Access to fetch at 'http://localhost:8080' from origin 'http://localhost:3000' h
 
 2. **Check environment variable:**
    ```bash
-   # In rediver-ui/.env.local
+   # In ui/.env.local
    NEXT_PUBLIC_API_URL=http://localhost:8080
    ```
 
@@ -282,7 +282,7 @@ Access to fetch at 'http://localhost:8080' from origin 'http://localhost:3000' h
 3. **Check cookie settings:**
    ```bash
    # In .env.local
-   NEXT_PUBLIC_AUTH_COOKIE_NAME=rediver_auth_token
+   NEXT_PUBLIC_AUTH_COOKIE_NAME=auth_token
    SECURE_COOKIES=false  # Must be false for localhost
    ```
 
@@ -376,7 +376,7 @@ Hydration failed because the initial UI does not match what was rendered on the 
 
 2. **Check redirect URI is configured:**
    - In Keycloak Admin Console
-   - Clients > rediver-ui > Valid redirect URIs
+   - Clients > ui > Valid redirect URIs
    - Add: `http://localhost:3000/*`
 
 3. **Verify client secret:**
@@ -467,7 +467,7 @@ docker compose up -d --scale app=1
 sudo chown -R $(id -u):$(id -g) ./data
 
 # Or use named volumes
-docker volume create rediver_data
+docker volume create app_data
 ```
 
 ### Network Issues Between Containers
@@ -529,7 +529,7 @@ SELECT * FROM pg_stat_statements ORDER BY total_time DESC LIMIT 10;
 If you can't resolve the issue:
 
 1. **Search existing issues:**
-   - [GitHub Issues](https://github.com/rediverio/rediver/issues)
+   - [GitHub Issues](https://github.com/rediverio/api/issues)
 
 2. **Create a new issue with:**
    - OS and version

@@ -16,7 +16,7 @@ This document describes the architecture of the ReDiver platform.
                           │                              │                              │
                           ▼                              ▼                              ▼
                ┌─────────────────────┐      ┌─────────────────────┐      ┌─────────────────────┐
-               │   rediver-ui        │      │   rediver-api       │      │   rediver-keycloak  │
+               │   ui        │      │   api       │      │   keycloak  │
                │   (Next.js 16)      │      │   (Go)              │      │   (Optional)        │
                │   Port: 3000        │      │   Port: 8080        │      │   Port: 8180        │
                └─────────────────────┘      └─────────────────────┘      └─────────────────────┘
@@ -35,7 +35,7 @@ This document describes the architecture of the ReDiver platform.
 
 ## Component Overview
 
-### Frontend (rediver-ui)
+### Frontend (ui)
 
 **Technology Stack:**
 - Next.js 16 (App Router, React Server Components)
@@ -73,7 +73,7 @@ src/
 └── hooks/                # Global hooks
 ```
 
-### Backend (rediver-api)
+### Backend (api)
 
 **Technology Stack:**
 - Go 1.25
@@ -489,6 +489,6 @@ CREATE TABLE exposures (
 
 ## Related Documentation
 
-- [Backend Architecture](../rediver-api/docs/architecture/)
-- [Frontend Architecture](../rediver-ui/.claude/architecture.md)
-- [API Documentation](../rediver-api/docs/api/)
+- [Backend Architecture](../api/docs/architecture/)
+- [Frontend Architecture](../ui/.claude/architecture.md)
+- [API Documentation](../api/docs/api/)
