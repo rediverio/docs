@@ -1,3 +1,9 @@
+---
+layout: default
+title: Scan Pipeline Architecture
+parent: Architecture
+nav_order: 7
+---
 # Scan Pipeline Architecture
 
 ## Overview

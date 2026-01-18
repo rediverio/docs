@@ -1,5 +1,8 @@
 ---
 layout: default
+title: SDK & API Integration
+parent: Architecture
+nav_order: 3
 ---
 # SDK & API Integration Architecture
 

@@ -1,3 +1,9 @@
+---
+layout: default
+title: Agent & API Key Management
+parent: Architecture
+nav_order: 5
+---
 # Agent & API Key Management Architecture
 
 ## Overview

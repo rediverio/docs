@@ -1,5 +1,8 @@
 ---
 layout: default
+title: SDK Deployment Modes
+parent: Architecture
+nav_order: 2
 ---
 # Rediver SDK Deployment Modes
 

@@ -1,5 +1,8 @@
 ---
 layout: default
+title: Server-Agent Command Architecture
+parent: Architecture
+nav_order: 4
 ---
 # Server-Agent Command Architecture
 

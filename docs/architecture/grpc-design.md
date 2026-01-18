@@ -1,3 +1,9 @@
+---
+layout: default
+title: gRPC API Design
+parent: Architecture
+nav_order: 6
+---
 # gRPC API Design for Agent Communication
 
 ## Overview

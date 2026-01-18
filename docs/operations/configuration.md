@@ -1,5 +1,7 @@
 ---
 layout: default
+title: Environment Configuration
+nav_order: 7
 ---
 # Environment Configuration
 

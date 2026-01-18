@@ -1,5 +1,7 @@
 ---
 layout: default
+title: Development Setup
+nav_order: 5
 ---
 # Development Setup
 
