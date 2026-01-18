@@ -1,54 +1,23 @@
----
-layout: home
-title: Home
-nav_order: 1
-description: "ReDiver - Continuous Threat Exposure Management Platform"
-permalink: /
----
+# RediverIO Platform Documentation
 
-# ReDiver Documentation
-{: .fs-9 }
+Welcome to the official documentation for the **RediverIO Platform Workspace**. This site hosts guides for developers, contributors, and operators of the RediverIO ecosystem.
 
-Continuous Threat Exposure Management Platform
-{: .fs-6 .fw-300 }
+## 🚀 Getting Started
 
-[Getting Started](docs/getting-started){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
-[API Reference](docs/api/reference){: .btn .fs-5 .mb-4 .mb-md-0 }
+If you are new to the project, start here:
 
----
+*   [Development Guide](DEVELOPMENT.md): Learn how to set up your environment, use the `go.work` workspace, and contribute code.
+*   [Architecture Overview](architecture/README.md): High-level overview of how API, Agent, and UI interact.
 
-## CTEM 5-Stage Process
+## 📂 Repositories
 
-**Scoping** → **Discovery** → **Prioritization** → **Validation** → **Mobilization**
+The platform consists of several key repositories:
 
----
+*   **[API](https://github.com/rediverio/api)**: The brain of the operation.
+*   **[Agent](https://github.com/rediverio/agent)**: The distributed scanner.
+*   **[UI](https://github.com/rediverio/ui)**: The management dashboard.
+*   **[SDK](https://github.com/rediverio/sdk)**: Shared Go libraries.
 
-## Quick Links
+## 🛠 Support
 
-| Getting Started | Reference | Contributing |
-|:----------------|:----------|:-------------|
-| [Quick Start](docs/getting-started) | [API Reference](docs/api/reference) | [Contributing](CONTRIBUTING) |
-| [Development Setup](docs/development-setup) | [Architecture](docs/architecture/overview) | [Code of Conduct](CODE_OF_CONDUCT) |
-| [Configuration](docs/operations/configuration) | [Permissions](docs/guides/permissions) | [Security Policy](SECURITY) |
-
----
-
-## Guides
-
-- [Authentication](docs/guides/authentication) - Login flow, JWT, sessions
-- [Multi-tenancy](docs/guides/multi-tenancy) - Teams, tenant switching
-- [Permissions](docs/guides/permissions) - Role-based access control
-- [Running Workers](docs/guides/running-workers) - Configure and run scanners, agents
-
----
-
-## Support
-
-💖 If you find ReDiver useful, consider supporting:
-
-**BSC Network (BEP-20):**
-```
-0x97f0891b4a682904a78e6Bc854a58819Ea972454
-```
-
-📧 Contact: [rediverio@gmail.com](mailto:rediverio@gmail.com)
+For issues, please file tickets in the respective repositories or use the [Main Tracker](https://github.com/rediverio/rediver-platform/issues).

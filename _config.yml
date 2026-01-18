@@ -1,48 +1,5 @@
-title: ReDiver Documentation
-description: Continuous Threat Exposure Management Platform
-baseurl: ""
-url: "https://docs.rediver.io"
-
-# Build settings
-remote_theme: just-the-docs/just-the-docs
-plugins:
-  - jekyll-remote-theme
-  - jekyll-seo-tag
-
-# Just the Docs settings
-color_scheme: dark
-search_enabled: true
-search.heading_level: 3
-
-# Footer
-footer_content: "Copyright &copy; 2025 ReDiver. <a href=\"https://rediver.io\">rediver.io</a>"
-
-# Aux links for the upper right navigation
-aux_links:
-  "Platform":
-    - "https://app.rediver.io"
-  "API Docs":
-    - "https://api.rediver.io/docs"
-  "GitHub":
-    - "https://github.com/rediverio"
-
-# Navigation
-nav_external_links:
-  - title: Platform
-    url: https://app.rediver.io
-  - title: API
-    url: https://api.rediver.io/docs
-
-# Collections for organizing docs
-collections:
-  docs:
-    permalink: "/:collection/:path/"
-    output: true
-
-# Default front matter
-defaults:
-  - scope:
-      path: "docs"
-    values:
-      layout: "default"
-      nav_order: 1
+theme: jekyll-theme-cayman
+title: RediverIO Platform
+description: Unified workspace and documentation for RediverIO
+show_downloads: false
+google_analytics:
