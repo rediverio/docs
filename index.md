@@ -1,3 +1,9 @@
+---
+layout: default
+title: Home
+nav_order: 1
+---
+
 # RediverIO Platform Documentation
 
 Welcome to the official documentation for the **RediverIO Platform Workspace**. This site hosts guides for developers, contributors, and operators of the RediverIO ecosystem.
@@ -7,7 +13,7 @@ Welcome to the official documentation for the **RediverIO Platform Workspace**. 
 If you are new to the project, start here:
 
 *   [Development Guide](DEVELOPMENT.md): Learn how to set up your environment, use the `go.work` workspace, and contribute code.
-*   [Architecture Overview](architecture/README.md): High-level overview of how API, Agent, and UI interact.
+*   [Architecture Overview](architecture/index.md): High-level overview of how API, Agent, and UI interact.
 
 ## 📂 Repositories
 

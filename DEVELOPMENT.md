@@ -1,3 +1,9 @@
+---
+layout: default
+title: Development Guide
+nav_order: 2
+---
+
 # Development Guide
 
 This guide details the workflow for developing on the RediverIO platform.
