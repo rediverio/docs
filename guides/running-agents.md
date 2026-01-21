@@ -1,23 +1,23 @@
 ---
 layout: default
-title: Running Workers
+title: Running Agents
 parent: Guides
 nav_order: 4
 ---
-# Running Workers Guide
+# Running Agents Guide
 
-This guide explains how to create, configure, and run Workers (scanners, agents, collectors) with the Rediver platform.
+This guide explains how to create, configure, and run Agents (runners, workers, collectors, sensors) with the Rediver platform.
 
 ---
 
 ## Overview
 
-Workers are distributed components that execute security scans and push findings back to Rediver. The workflow is:
+Agents are distributed components that execute security scans and push findings back to Rediver. The workflow is:
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
 │  1. Create      │     │  2. Get API     │     │  3. Run         │
-│  Worker in UI   │────▶│  Key            │────▶│  agent  │
+│  Agent in UI    │────▶│  Key            │────▶│  agent          │
 │                 │     │                 │     │                 │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
                                                         │
@@ -33,23 +33,23 @@ Workers are distributed components that execute security scans and push findings
 
 ---
 
-## Step 1: Create a Worker in UI
+## Step 1: Create an Agent in UI
 
-1. Navigate to **Scoping > Workers** in the sidebar
-2. Click **+ Add Worker** button
-3. Fill in the worker details:
+1. Navigate to **Scoping > Agents** in the sidebar
+2. Click **+ Add Agent** button
+3. Fill in the agent details:
    - **Name**: Descriptive name (e.g., "prod-scanner-01")
-   - **Type**: Select worker type:
-     - `Scanner`: Runs security tools (semgrep, trivy, nuclei, etc.)
-     - `Agent`: Full daemon with scanning + command execution
-     - `Collector`: Pulls data from external sources
-     - `Worker`: General-purpose worker
-   - **Capabilities**: What the worker can do (SAST, SCA, Secrets, etc.)
+   - **Type**: Select agent type:
+     - `Runner`: CI/CD one-shot scans
+     - `Worker`: Server-controlled daemon
+     - `Collector`: Data collection agent
+     - `Sensor`: EASM sensor
+   - **Capabilities**: What the agent can do (SAST, SCA, Secrets, etc.)
    - **Tools**: Which security tools are installed (semgrep, trivy, gitleaks, etc.)
    - **Execution Mode**:
-     - `Standalone`: Runs independently with scheduled scans
-     - `Daemon`: Polls server for commands
-4. Click **Create Worker**
+     - `One-shot`: Runs once and exits (for runners)
+     - `Daemon`: Long-running process (for workers, collectors, sensors)
+4. Click **Create Agent**
 
 > **IMPORTANT**: Copy and save the API key immediately! It is only shown once during creation.
 
@@ -57,14 +57,14 @@ Workers are distributed components that execute security scans and push findings
 
 ## Step 2: Get the API Key
 
-### On Worker Creation
-When you create a worker, the API key is displayed in a dialog:
+### On Agent Creation
+When you create an agent, the API key is displayed in a dialog:
 - Click the **Copy** button to copy the full key
 - Store it securely (environment variable, secrets manager, etc.)
 
 ### If You Lost the API Key
 If you didn't save the API key:
-1. Click the **...** menu on the worker card
+1. Click the **...** menu on the agent card
 2. Select **Regenerate API Key**
 3. Confirm the regeneration (this invalidates the old key)
 4. Copy and save the new key from the dialog
@@ -101,8 +101,8 @@ docker pull rediver/agent:latest
 
 The easiest way to get your agent configuration is using the **View Config** feature:
 
-1. Go to **Scoping > Workers**
-2. Click the **...** menu on your worker card
+1. Go to **Scoping > Agents**
+2. Click the **...** menu on your agent card
 3. Select **View Config**
 4. Choose your preferred format:
    - **YAML**: Full configuration file
@@ -119,7 +119,7 @@ Create a configuration file `agent.yaml`:
 ```yaml
 # Agent Configuration
 agent:
-  name: prod-scanner-01              # Must match worker name in UI
+  name: prod-scanner-01              # Must match agent name in UI
   enable_commands: true              # Allow server to send commands
   command_poll_interval: 30s         # How often to poll for commands
   heartbeat_interval: 1m             # How often to send heartbeat
@@ -127,8 +127,8 @@ agent:
 # Rediver Platform Connection
 server:
   base_url: https://api.rediver.io   # Your Rediver API URL
-  api_key: rdw_xxxxxxxxxxxxxxxxxx    # API key from Step 2
-  worker_id: 76d81868-25cd-...       # Optional: Worker UUID from UI
+  api_key: rda_xxxxxxxxxxxxxxxxxx    # API key from Step 2
+  agent_id: 76d81868-25cd-...        # Optional: Agent UUID from UI
   timeout: 30s
 
 # Enabled Scanners
@@ -156,8 +156,8 @@ You can also use environment variables:
 
 ```bash
 export API_URL=https://api.rediver.io
-export API_KEY=rdw_xxxxxxxxxxxxxxxxxx
-export WORKER_ID=76d81868-25cd-45e6-ba66-6adfda4d0573
+export API_KEY=rda_xxxxxxxxxxxxxxxxxx
+export AGENT_ID=76d81868-25cd-45e6-ba66-6adfda4d0573
 ```
 
 ---
@@ -212,7 +212,7 @@ docker run -d \
   --name agent \
   -v /opt/code:/code:ro \
   -v ./agent.yaml:/app/agent.yaml \
-  -e API_KEY=rdw_xxx \
+  -e API_KEY=rda_xxx \
   rediver/agent:latest \
   -daemon -config /app/agent.yaml
 ```
@@ -233,7 +233,7 @@ WorkingDirectory=/opt/rediver
 ExecStart=/opt/rediver/agent -daemon -config /opt/rediver/agent.yaml
 Restart=always
 RestartSec=10
-Environment=API_KEY=rdw_xxx
+Environment=API_KEY=rda_xxx
 
 [Install]
 WantedBy=multi-user.target

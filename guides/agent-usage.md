@@ -43,10 +43,10 @@ docker pull rediverio/agent:ci      # CI/CD optimized (~1.2GB)
 
 ## Quick Start
 
-### 1. Create a Worker in Rediver UI
+### 1. Create an Agent in Rediver UI
 
-1. Navigate to **Scoping > Workers**
-2. Click **+ Add Worker**
+1. Navigate to **Scoping > Agents**
+2. Click **+ Add Agent**
 3. Fill in details (name, type, capabilities)
 4. **Copy the API key** (shown only once!)
 
@@ -136,8 +136,8 @@ To view the SBOM for an asset, use the API endpoint:
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `API_URL` | Yes* | Platform API URL |
-| `API_KEY` | Yes* | Worker API key |
-| `WORKER_ID` | No | Worker UUID for tracking |
+| `API_KEY` | Yes* | Agent API key |
+| `AGENT_ID` | No | Agent UUID for tracking |
 | `GITHUB_TOKEN` | Auto | GitHub token (for PR comments) |
 | `GITLAB_TOKEN` | Auto | GitLab token (for MR comments) |
 
@@ -160,7 +160,7 @@ agent:
 server:
   base_url: "https://api.rediver.io"
   api_key: "rdw_your_api_key"
-  worker_id: ""  # Auto-generated if empty
+  agent_id: ""  # Auto-generated if empty
   timeout: 30s
   max_retries: 3
   retry_delay: 2s
@@ -417,9 +417,9 @@ journalctl -u rediver-agent -f
 
 ## Troubleshooting
 
-### Worker Shows "Inactive"
+### Agent Shows "Inactive"
 
-Workers become inactive if no heartbeat is received for 5 minutes.
+Agents become inactive if no heartbeat is received for 5 minutes.
 
 **Causes:**
 - Agent not running
@@ -435,7 +435,7 @@ Workers become inactive if no heartbeat is received for 5 minutes.
 ### 401 Unauthorized
 
 - API key is invalid or revoked
-- Regenerate key in UI: Workers > ... > Regenerate API Key
+- Regenerate key in UI: Agents > ... > Regenerate API Key
 
 ### Findings Not Appearing
 
@@ -468,6 +468,6 @@ Other causes:
 
 ## Next Steps
 
-- **[Running Workers](running-workers.md)** - Create workers in Rediver UI
+- **[Running Agents](running-agents.md)** - Create agents in Rediver UI
 - **[SDK Quick Start](sdk-quick-start.md)** - Use SDK directly
 - **[Custom Tools Development](custom-tools-development.md)** - Build your own tools

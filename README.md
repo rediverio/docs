@@ -54,7 +54,7 @@ Rediver is an enterprise-grade **Continuous Threat Exposure Management (CTEM)** 
 |----------|----------|
 | **Asset Management** | 6 asset types (Domains, Websites, Services, Repositories, Cloud, Credentials) |
 | **Vulnerability Management** | Findings, CVE tracking, CVSS scoring, SLA policies |
-| **Scan Management** | Workers, Scan Profiles, Pipelines, Tool Categories |
+| **Scan Management** | Agents, Scan Profiles, Pipelines, Tool Categories |
 | **Multi-tenancy** | Teams, Role-based access (Owner/Admin/Member/Viewer) |
 | **Integrations** | SDK for custom tools, Agent for CI/CD, SCM connections |
 | **Security** | JWT/OIDC auth, CSRF protection, audit logging |
@@ -103,7 +103,7 @@ Rediver is an enterprise-grade **Continuous Threat Exposure Management (CTEM)** 
 | [Authentication](docs/guides/authentication.md) | Login flow, JWT, sessions |
 | [Multi-tenancy](docs/guides/multi-tenancy.md) | Teams, tenant switching |
 | [Permissions](docs/guides/permissions.md) | Role-based access control |
-| [Running Workers](docs/guides/running-workers.md) | Setup and run scanning agents |
+| [Running Agents](docs/guides/running-agents.md) | Setup and run scanning agents |
 | [SDK Development](docs/guides/sdk-development.md) | Build custom scanners |
 | [Building Ingestion Tools](docs/guides/building-ingestion-tools.md) | Custom data collectors |
 
