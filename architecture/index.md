@@ -19,7 +19,8 @@ Technical architecture and design documentation for the Rediver CTEM Platform.
 | [Deployment Modes](deployment-modes.md) | Standalone vs distributed deployment |
 | [Server-Agent Communication](server-agent-command.md) | Command & control protocol |
 | [Scan Pipeline Design](scan-pipeline-design.md) | Workflow execution engine |
-| [Scan Orchestration](scan-orchestration.md) | **NEW** Automated scan scheduling and pipeline progression |
+| [Scan Orchestration](scan-orchestration.md) | Automated scan scheduling and pipeline progression |
+| [Notification System](notification-system.md) | Real-time alerts, async patterns, provider integrations |
 
 ---
 

@@ -51,10 +51,14 @@ Development, deployment, and operational guides.
 
 ### [📖 Platform Guides](./guides/index.md)
 Comprehensive guides for using the platform.
-- [End-to-End Workflow](./guides/END_TO_END_WORKFLOW.md) ⭐ **NEW**
+- [End-to-End Workflow](./guides/END_TO_END_WORKFLOW.md)
 - [Authentication](./guides/authentication.md)
 - [Multi-Tenancy](./guides/multi-tenancy.md)
 - [Scan Management](./guides/scan-management.md)
+- [Notification Integrations](./guides/notification-integrations.md) ⭐ **NEW**
+
+### [🗺️ Roadmap](./ROADMAP.md)
+Product roadmap and planned features by CTEM phase.
 
 ---
 

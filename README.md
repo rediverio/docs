@@ -103,6 +103,7 @@ Rediver is an enterprise-grade **Continuous Threat Exposure Management (CTEM)** 
 | [Authentication](docs/guides/authentication.md) | Login flow, JWT, sessions |
 | [Multi-tenancy](docs/guides/multi-tenancy.md) | Teams, tenant switching |
 | [Permissions](docs/guides/permissions.md) | Role-based access control |
+| [Notification Integrations](docs/guides/notification-integrations.md) | Slack, Teams, Telegram, Email alerts |
 | [Running Agents](docs/guides/running-agents.md) | Setup and run scanning agents |
 | [SDK Development](docs/guides/sdk-development.md) | Build custom scanners |
 | [Building Ingestion Tools](docs/guides/building-ingestion-tools.md) | Custom data collectors |
@@ -114,6 +115,7 @@ Rediver is an enterprise-grade **Continuous Threat Exposure Management (CTEM)** 
 | [Deployment Modes](docs/architecture/deployment-modes.md) | Standalone, distributed |
 | [Server-Agent Communication](docs/architecture/server-agent-command.md) | Command & control |
 | [Scan Pipeline Design](docs/architecture/scan-pipeline-design.md) | Workflow execution |
+| [Notification System](docs/architecture/notification-system.md) | Real-time alerts, async patterns |
 
 ### Reference
 | Document | Description |

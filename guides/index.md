@@ -22,6 +22,14 @@ Comprehensive guides for using the Rediver CTEM Platform.
 
 ---
 
+## Integrations
+
+| Guide | Description |
+|-------|-------------|
+| [Notification Integrations](notification-integrations.md) | Slack, Teams, Telegram, Webhook alerts |
+
+---
+
 ## Scanning & Security
 
 | Guide | Description |
