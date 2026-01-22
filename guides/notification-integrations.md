@@ -176,6 +176,47 @@ Send notifications to any HTTP endpoint. The payload format:
 
 ---
 
+## Event Type Filtering
+
+Control which types of events trigger notifications. This allows you to create specialized channels for different purposes.
+
+### Available Event Types
+
+| Event Type | Description | Default |
+|------------|-------------|---------|
+| **Findings** | New security findings from scans | Enabled |
+| **Exposures** | Credential/data exposure alerts | Enabled |
+| **Scans** | Scan completion notifications | Disabled |
+| **Alerts** | System alerts and warnings | Enabled |
+
+### Via UI
+
+When creating or editing a channel:
+1. In the **Event Types** section, check the event types you want
+2. Unchecked types will be filtered out
+3. If all types are selected, the channel receives all events
+
+### Via API
+
+```bash
+# Create channel with specific event types
+curl -X POST /api/v1/integrations/notifications \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Findings Only",
+    "provider": "slack",
+    "credentials": "https://hooks.slack.com/...",
+    "enabled_event_types": ["findings"],
+    "notify_on_critical": true,
+    "notify_on_high": true
+  }'
+```
+
+**Note:** An empty `enabled_event_types` array means all events are enabled (backward compatible).
+
+---
+
 ## Severity Filters
 
 Control which severity levels trigger notifications:
@@ -299,6 +340,7 @@ GET /api/v1/integrations/notifications
         "notify_on_high": true,
         "notify_on_medium": false,
         "notify_on_low": false,
+        "enabled_event_types": ["findings", "exposures", "alerts"],
         "min_interval_minutes": 5
       }
     }
@@ -326,6 +368,7 @@ POST /api/v1/integrations/notifications
   "notify_on_high": true,
   "notify_on_medium": false,
   "notify_on_low": false,
+  "enabled_event_types": ["findings", "exposures", "alerts"],
   "message_template": "optional-custom-template",
   "include_details": true,
   "min_interval_minutes": 5
@@ -411,11 +454,12 @@ There is no public API to send arbitrary notifications to prevent abuse.
 ## Best Practices
 
 1. **Use severity filters** - Avoid alert fatigue by only enabling Critical/High for most channels
-2. **Create dedicated channels** - Separate notification channels for different purposes (security vs dev team)
-3. **Test before relying** - Always send a test notification after setup
-4. **Set rate limits** - Use `min_interval_minutes` to prevent spam during high-volume scans
-5. **Monitor history** - Check notification history to verify delivery
-6. **Use multiple channels** - Critical alerts should go to multiple channels (e.g., Slack + Email)
+2. **Use event type filters** - Create specialized channels (e.g., "Findings Only" for security team, "Scans" for DevOps)
+3. **Create dedicated channels** - Separate notification channels for different purposes (security vs dev team)
+4. **Test before relying** - Always send a test notification after setup
+5. **Set rate limits** - Use `min_interval_minutes` to prevent spam during high-volume scans
+6. **Monitor history** - Check notification history to verify delivery
+7. **Use multiple channels** - Critical alerts should go to multiple channels (e.g., Slack + Email)
 
 ---
 

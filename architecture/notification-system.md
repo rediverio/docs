@@ -93,17 +93,46 @@ This interface decouples notification logic from business services, enabling:
 // internal/domain/integration/notification_extension.go
 
 type NotificationExtension struct {
-    channelID          string    // Provider-specific ID
-    channelName        string    // Display name
-    notifyOnCritical   bool      // Default: true
-    notifyOnHigh       bool      // Default: true
-    notifyOnMedium     bool      // Default: false
-    notifyOnLow        bool      // Default: false
-    messageTemplate    string    // Custom message format
-    includeDetails     bool      // Extended info
-    minIntervalMinutes int       // Rate limiting
+    channelID          string       // Provider-specific ID
+    channelName        string       // Display name
+    notifyOnCritical   bool         // Default: true
+    notifyOnHigh       bool         // Default: true
+    notifyOnMedium     bool         // Default: false
+    notifyOnLow        bool         // Default: false
+    enabledEventTypes  []EventType  // Dynamic event routing (JSONB)
+    messageTemplate    string       // Custom message format
+    includeDetails     bool         // Extended info
+    minIntervalMinutes int          // Rate limiting
 }
+
+type EventType string
+
+const (
+    EventTypeFindings  EventType = "findings"
+    EventTypeExposures EventType = "exposures"
+    EventTypeScans     EventType = "scans"
+    EventTypeAlerts    EventType = "alerts"
+)
 ```
+
+### 4. Event Type Filtering
+
+Event types are stored as a JSONB array in PostgreSQL, allowing dynamic filtering without schema changes:
+
+```sql
+-- Storage format in integration_notification_extensions
+enabled_event_types JSONB DEFAULT '["findings", "exposures", "alerts"]'
+
+-- Example values
+'["findings"]'                           -- Findings only
+'["findings", "exposures", "alerts"]'    -- Default: all except scans
+'[]'                                     -- Empty = all events (backward compatible)
+```
+
+**Benefits:**
+- No migration needed to add new event types
+- Flexible filtering with any combination
+- Backward compatible (empty/null = all events)
 
 ---
 
@@ -179,6 +208,11 @@ func (s *IntegrationService) BroadcastNotification(ctx context.Context, input Br
             continue
         }
 
+        // Check event type filter BEFORE sending
+        if iwn.Notification != nil && !iwn.Notification.ShouldNotifyEventType(input.EventType) {
+            continue
+        }
+
         // Check severity filter BEFORE sending
         if iwn.Notification != nil && !iwn.Notification.ShouldNotify(input.Severity) {
             continue
@@ -197,6 +231,23 @@ func (s *IntegrationService) BroadcastNotification(ctx context.Context, input Br
     }
 
     return results, nil
+}
+```
+
+**Event Type Filter Logic:**
+```go
+// ShouldNotifyEventType checks if the event type should trigger notification
+func (e *NotificationExtension) ShouldNotifyEventType(eventType EventType) bool {
+    // Empty list = all events enabled (backward compatible)
+    if len(e.enabledEventTypes) == 0 {
+        return true
+    }
+    for _, et := range e.enabledEventTypes {
+        if et == eventType {
+            return true
+        }
+    }
+    return false
 }
 ```
 
@@ -346,6 +397,30 @@ For security, there is no public `/send` API. Notifications are triggered only:
 ---
 
 ## Database Schema
+
+### integration_notification_extensions Table
+
+```sql
+CREATE TABLE integration_notification_extensions (
+    integration_id UUID PRIMARY KEY REFERENCES integrations(id) ON DELETE CASCADE,
+    channel_id VARCHAR(255),
+    channel_name VARCHAR(255),
+    notify_on_critical BOOLEAN DEFAULT TRUE,
+    notify_on_high BOOLEAN DEFAULT TRUE,
+    notify_on_medium BOOLEAN DEFAULT FALSE,
+    notify_on_low BOOLEAN DEFAULT FALSE,
+    enabled_event_types JSONB DEFAULT '["findings", "exposures", "alerts"]',
+    message_template TEXT,
+    include_details BOOLEAN DEFAULT TRUE,
+    min_interval_minutes INTEGER DEFAULT 5,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- GIN index for efficient JSONB containment queries
+CREATE INDEX idx_notification_extensions_event_types
+ON integration_notification_extensions USING GIN (enabled_event_types);
+```
 
 ### notification_history Table
 
@@ -521,22 +596,28 @@ exposureService.SetExposureNotifier(integrationService)
 - Use `context.WithTimeout` for bounded execution (30s)
 - Log errors but don't fail the primary operation
 
-### 2. Severity Filtering
+### 2. Event Type Filtering
+- Check event type BEFORE severity filtering
+- Use JSONB for flexible, schema-less storage
+- Empty array = all events (backward compatible)
+- Add new event types without migrations
+
+### 3. Severity Filtering
 - Check severity BEFORE attempting send
 - Skip early to avoid unnecessary processing
 - Default: Critical and High enabled
 
-### 3. History Recording
+### 4. History Recording
 - Create history entry BEFORE sending (status: pending)
 - Update status AFTER send attempt (success/failed)
 - Store provider-specific message IDs
 
-### 4. Error Handling
+### 5. Error Handling
 - Fire-and-forget for internal triggers
 - Return errors for explicit API calls (Test Notification)
 - Always log notification failures with context
 
-### 5. Testing
+### 6. Testing
 - Rate limit test notifications (30s)
 - Test notifications record in history
 - Verify provider connectivity before enabling in production
