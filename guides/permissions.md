@@ -1,271 +1,572 @@
 ---
 layout: default
-title: Permissions Matrix
+title: Permission System
 parent: Guides
 nav_order: 3
 ---
-# Permission Matrix
 
-Exact permission matrix for the Rediver CTEM Platform.
+# Permission System - Complete Guide
 
-> Mapping from `internal/domain/permission/role_mapping.go`
-
----
-
-## Role Hierarchy
-
-| Role | Priority | Description |
-|------|:--------:|-------------|
-| **Owner** | 4 | Full access + billing + team deletion |
-| **Admin** | 3 | Full resource access + member management |
-| **Member** | 2 | Read + Write (no delete, no member management) |
-| **Viewer** | 1 | Read-only access |
+Comprehensive guide to the 3-layer access control system in Rediver.
 
 ---
 
-## Complete Role → Permissions Mapping
+## Overview
 
-### 📋 Owner Permissions (41 permissions)
+Rediver implements a **3-Layer Access Control** architecture:
 
 ```
-# Resource Access
-assets:read, assets:write, assets:delete
-repositories:read, repositories:write, repositories:delete
-components:read, components:write, components:delete
-findings:read, findings:write, findings:delete
-vulnerabilities:read
-
-# Dashboard & Reports
-dashboard:read
-audit:read
-reports:read, reports:write
-
-# Security Operations
-scans:read, scans:write, scans:delete
-credentials:read, credentials:write
-pentest:read, pentest:write
-remediation:read, remediation:write
-workflows:read, workflows:write
-
-# Team Management (FULL)
-members:read, members:invite, members:manage
-team:read, team:update, team:delete
-
-# Billing (EXCLUSIVE)
-billing:read, billing:manage
-
-# Integrations
-integrations:read, integrations:manage
+┌─────────────────────────────────────────────────────────────────┐
+│                    LAYER 1: LICENSING (Tenant)                   │
+├─────────────────────────────────────────────────────────────────┤
+│  Tenant → Plan → Modules                                        │
+│  "What modules can this tenant access?"                         │
+│  Determined by: Subscription plan (Free, Pro, Business, etc.)   │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                    LAYER 2: RBAC (User)                          │
+├─────────────────────────────────────────────────────────────────┤
+│  User → Roles → Permissions                                      │
+│  "What can this user do within allowed modules?"                 │
+│  Note: Can only assign permissions from modules tenant has       │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                    LAYER 3: DATA SCOPE (Groups)                  │
+├─────────────────────────────────────────────────────────────────┤
+│  User → Groups → Assets/Data                                     │
+│  "What data can this user see?"                                  │
+│  Determined by: Group membership and asset ownership             │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### 🛡️ Admin Permissions (38 permissions)
+## Layer 1: Licensing (Tenant Level)
 
-```
-# Resource Access (SAME AS OWNER)
-assets:read, assets:write, assets:delete
-repositories:read, repositories:write, repositories:delete
-components:read, components:write, components:delete
-findings:read, findings:write, findings:delete
-vulnerabilities:read
+### Subscription Plans
 
-# Dashboard & Reports (SAME AS OWNER)
-dashboard:read
-audit:read
-reports:read, reports:write
+Each tenant has a subscription plan that determines which modules are available:
 
-# Security Operations (SAME AS OWNER)
-scans:read, scans:write, scans:delete
-credentials:read, credentials:write
-pentest:read, pentest:write
-remediation:read, remediation:write
-workflows:read, workflows:write
+| Plan | Modules | Limits |
+|------|---------|--------|
+| **Free** | Core (Dashboard, Assets, Teams) | 50 assets, 2 members |
+| **Pro** | Core + Security (Findings, Scans, Reports) | 500 assets, 10 members |
+| **Business** | Core + Security + Compliance + Platform | 2,000 assets, 25 members |
+| **Enterprise** | All modules | Unlimited |
 
-# Team Management (PARTIAL - NO team:delete)
-members:read, members:invite, members:manage
-team:read, team:update
-⛔ team:delete
+### Licensing Service
 
-# Billing (READ ONLY)
-billing:read
-⛔ billing:manage
+```go
+// Check if tenant has access to a module
+hasModule, err := licensingService.CheckModuleAccess(ctx, tenantID, "findings")
 
-# Integrations (SAME AS OWNER)
-integrations:read, integrations:manage
+// Get tenant's enabled modules
+modules, err := licensingService.GetTenantModules(ctx, tenantID)
+
+// Check module limits
+withinLimit, limit, err := licensingService.CheckModuleLimit(ctx, tenantID, "assets", "max_items", currentCount)
 ```
 
----
-
-### 👤 Member Permissions (24 permissions)
+### API Endpoints
 
 ```
-# Resource Access (READ + WRITE, NO DELETE)
-assets:read, assets:write
-⛔ assets:delete
-repositories:read, repositories:write
-⛔ repositories:delete
-components:read, components:write
-⛔ components:delete
-findings:read, findings:write
-⛔ findings:delete
-vulnerabilities:read
-
-# Dashboard & Reports
-dashboard:read
-reports:read, reports:write
-
-# Security Operations
-scans:read, scans:write
-⛔ scans:delete
-credentials:read
-⛔ credentials:write
-pentest:read, pentest:write
-remediation:read, remediation:write
-workflows:read
-⛔ workflows:write
-
-# Team (READ ONLY)
-members:read
-⛔ members:invite, members:manage
-team:read
-⛔ team:update, team:delete
-
-# Billing
-⛔ billing:read, billing:manage
-
-# Integrations (READ ONLY)
-integrations:read
-⛔ integrations:manage
+GET /api/v1/plans              # List public plans
+GET /api/v1/plans/{id}         # Get plan details
+GET /api/v1/me/modules         # Get tenant's enabled modules
+GET /api/v1/me/subscription    # Get tenant's subscription
 ```
 
 ---
 
-### 👁️ Viewer Permissions (16 permissions)
+## Layer 2: RBAC (User Level)
+
+### Membership Levels
+
+| Level | isAdmin JWT | Permissions in JWT | Description |
+|-------|:-----------:|:------------------:|-------------|
+| **Owner** | ✅ true | nil | Full access including owner-only operations. Protected - cannot be removed. |
+| **Admin** | ✅ true | nil | Almost full access. Cannot perform owner-only operations. |
+| **Member** | ❌ false | ~42 permissions | Standard read/write access. Permissions from RBAC roles. |
+| **Viewer** | ❌ false | ~25 permissions | Read-only access. Permissions from RBAC roles. |
+
+**Key Points:**
+- **Owner** has ALL permissions - bypasses all permission checks
+- **Admin** has almost all permissions - bypasses general permission checks, but NOT owner-only operations
+- **Member/Viewer** - permissions checked from JWT (included in token to keep JWT under 4KB browser cookie limit)
+- All invited users become "member" automatically
+- Actual permissions are determined by RBAC roles
+
+**Owner-only Operations** (Admin cannot perform):
+
+| Permission | Description |
+|------------|-------------|
+| `TeamDelete` | Delete the tenant |
+| `BillingManage` | Manage billing settings |
+| `GroupsDelete` | Delete access control groups |
+| `PermissionSetsDelete` | Delete permission sets |
+| `AssignmentRulesDelete` | Delete assignment rules |
+
+### System Roles
+
+| Role | Permission Count | Description |
+|------|-----------------|-------------|
+| **Administrator** | 115+ | Full administrative access |
+| **Member** | 49+ | Standard read/write access |
+| **Viewer** | 38+ | Read-only access |
+
+### Custom Roles
+
+Tenants can create custom roles with any combination of permissions:
+- Security Analyst
+- Developer
+- Compliance Officer
+- etc.
+
+### Permission Resolution
 
 ```
-# Resource Access (READ ONLY)
-assets:read
-repositories:read
-components:read
-findings:read
-vulnerabilities:read
+User's Effective Permissions = Union of all assigned Role permissions
 
-# Dashboard & Reports (READ ONLY)
-dashboard:read
-reports:read
-scans:read
-credentials:read
-pentest:read
-remediation:read
-workflows:read
+Exception: Owner has ALL permissions regardless of roles
+```
 
-# Team (READ ONLY)
-members:read
-team:read
+### Permission Check Flow
 
-# Integrations (READ ONLY)
-integrations:read
+```
+API Request
+    ↓
+Auth Middleware (validate JWT)
+    ↓
+Extract user_id, tenant_id, role, isAdmin from token
+    ↓
+Check: Does user have required permission?
+    │
+    ├── If isAdmin=true (Owner/Admin) → Bypass permission check ✓
+    │
+    ├── For Local Auth: Check permissions[] array from JWT
+    │
+    └── For OIDC: Check roles from Keycloak claims
+    ↓
+If permission granted → Call Handler
+If permission denied → 403 Forbidden
+```
+
+### Owner-only Operations Check
+
+For sensitive owner-only operations, use `RequireOwner()` middleware:
+
+```go
+// In routes.go
+r.With(middleware.RequireOwner()).Delete("/tenant", h.DeleteTenant)
+r.With(middleware.RequireOwner()).Post("/billing/manage", h.ManageBilling)
+
+// The middleware checks: role == "owner"
+// Returns 403 if not owner
 ```
 
 ---
 
-## Permission Matrix Table
+## Layer 3: Data Scope (Groups)
 
-| Permission | Owner | Admin | Member | Viewer |
-|-----------|:-----:|:-----:|:------:|:------:|
-| **Assets** ||||
-| `assets:read` | ✅ | ✅ | ✅ | ✅ |
-| `assets:write` | ✅ | ✅ | ✅ | ❌ |
-| `assets:delete` | ✅ | ✅ | ❌ | ❌ |
-| **Repositories** ||||
-| `repositories:read` | ✅ | ✅ | ✅ | ✅ |
-| `repositories:write` | ✅ | ✅ | ✅ | ❌ |
-| `repositories:delete` | ✅ | ✅ | ❌ | ❌ |
-| **Components** ||||
-| `components:read` | ✅ | ✅ | ✅ | ✅ |
-| `components:write` | ✅ | ✅ | ✅ | ❌ |
-| `components:delete` | ✅ | ✅ | ❌ | ❌ |
-| **Findings** ||||
-| `findings:read` | ✅ | ✅ | ✅ | ✅ |
-| `findings:write` | ✅ | ✅ | ✅ | ❌ |
-| `findings:delete` | ✅ | ✅ | ❌ | ❌ |
-| **Vulnerabilities** ||||
-| `vulnerabilities:read` | ✅ | ✅ | ✅ | ✅ |
-| `vulnerabilities:write` | ⚠️ | ⚠️ | ❌ | ❌ |
-| `vulnerabilities:delete` | ⚠️ | ⚠️ | ❌ | ❌ |
-| **Dashboard & Audit** ||||
-| `dashboard:read` | ✅ | ✅ | ✅ | ✅ |
-| `audit:read` | ✅ | ✅ | ❌ | ❌ |
-| **Scans** ||||
-| `scans:read` | ✅ | ✅ | ✅ | ✅ |
-| `scans:write` | ✅ | ✅ | ✅ | ❌ |
-| `scans:delete` | ✅ | ✅ | ❌ | ❌ |
-| **Credentials** ||||
-| `credentials:read` | ✅ | ✅ | ✅ | ✅ |
-| `credentials:write` | ✅ | ✅ | ❌ | ❌ |
-| **Reports** ||||
-| `reports:read` | ✅ | ✅ | ✅ | ✅ |
-| `reports:write` | ✅ | ✅ | ✅ | ❌ |
-| **Pentest** ||||
-| `pentest:read` | ✅ | ✅ | ✅ | ✅ |
-| `pentest:write` | ✅ | ✅ | ✅ | ❌ |
-| **Remediation** ||||
-| `remediation:read` | ✅ | ✅ | ✅ | ✅ |
-| `remediation:write` | ✅ | ✅ | ✅ | ❌ |
-| **Workflows** ||||
-| `workflows:read` | ✅ | ✅ | ✅ | ✅ |
-| `workflows:write` | ✅ | ✅ | ❌ | ❌ |
-| **Members** ||||
-| `members:read` | ✅ | ✅ | ✅ | ✅ |
-| `members:invite` | ✅ | ✅ | ❌ | ❌ |
-| `members:manage` | ✅ | ✅ | ❌ | ❌ |
-| **Team** ||||
-| `team:read` | ✅ | ✅ | ✅ | ✅ |
-| `team:update` | ✅ | ✅ | ❌ | ❌ |
-| `team:delete` | ✅ | ❌ | ❌ | ❌ |
-| **Billing** ||||
-| `billing:read` | ✅ | ✅ | ❌ | ❌ |
-| `billing:manage` | ✅ | ❌ | ❌ | ❌ |
-| **Integrations** ||||
-| `integrations:read` | ✅ | ✅ | ✅ | ✅ |
-| `integrations:manage` | ✅ | ✅ | ❌ | ❌ |
+### Group Types
 
-> ⚠️ = Admin write/delete for vulnerabilities managed via routes
+| Type | Purpose |
+|------|---------|
+| `security_team` | SOC, AppSec, Pentest teams |
+| `asset_owner` | Teams owning specific assets |
+| `team` | Development teams |
+| `department` | Organizational departments |
+| `project` | Project-specific access |
+| `external` | Vendors, contractors |
+| `custom` | Other use cases |
+
+### Group Features
+
+- **Members**: Users in the group (with role: admin, member)
+- **Assets**: Assets owned by the group (primary, shared ownership)
+- **Data Scope**: Members can only see data related to group's assets
+
+### Data Scope Resolution
+
+```
+User's Accessible Data = Union of all Group's assets
+
+Users with hasFullDataAccess = true can see ALL tenant data
+```
 
 ---
 
-## How Permissions Work
+## Permission Naming Convention
 
-1. **Token Generation**: When a user exchanges a token for a tenant, the role is mapped to permissions:
-   ```go
-   // jwt.go
-   permissions := roleToPermissions(tenant.Role)
-   
-   // role_mapping.go  
-   func roleToPermissions(role string) []string {
-       r := tenant.Role(role)
-       return permission.GetPermissionStringsForRole(r)
-   }
-   ```
+Permissions follow a hierarchical naming pattern:
 
-2. **Permission Check**: API routes check permissions from the token:
-   ```go
-   // routes.go
-   r.GET("/", h.List, middleware.Require(permission.AssetsRead))
-   r.POST("/", h.Create, middleware.Require(permission.AssetsWrite))
-   ```
+```
+{module}:{subfeature}:{action}
+```
 
-3. **Middleware Flow**: 
-   ```
-   Request → Auth Middleware → Extract permissions from JWT → 
-   Require(permission) Middleware → Check HasPermission → Allow/Deny
-   ```
+Examples:
+- `integrations:scm:read` - View SCM connections
+- `assets:groups:write` - Manage asset groups
+- `team:roles:assign` - Assign roles to users
+
+For simpler permissions without subfeatures:
+
+```
+{module}:{action}
+```
+
+Examples:
+- `dashboard:read` - View dashboard
+- `assets:read` - View assets
+- `findings:write` - Edit findings
+
+---
+
+## Complete Permission Matrix
+
+### Assets Module
+
+| Permission | Administrator | Member | Viewer |
+|-----------|:-------------:|:------:|:------:|
+| `assets:read` | ✅ | ✅ | ✅ |
+| `assets:write` | ✅ | ✅ | ❌ |
+| `assets:delete` | ✅ | ❌ | ❌ |
+| `assets:groups:read` | ✅ | ✅ | ✅ |
+| `assets:groups:write` | ✅ | ✅ | ❌ |
+| `assets:groups:delete` | ✅ | ❌ | ❌ |
+| `assets:repositories:read` | ✅ | ✅ | ✅ |
+| `assets:repositories:write` | ✅ | ✅ | ❌ |
+| `assets:components:read` | ✅ | ✅ | ✅ |
+| `assets:components:write` | ✅ | ✅ | ❌ |
+| `assets:branches:read` | ✅ | ✅ | ✅ |
+| `assets:branches:write` | ✅ | ✅ | ❌ |
+
+### Findings Module
+
+| Permission | Administrator | Member | Viewer |
+|-----------|:-------------:|:------:|:------:|
+| `findings:read` | ✅ | ✅ | ✅ |
+| `findings:write` | ✅ | ✅ | ❌ |
+| `findings:delete` | ✅ | ❌ | ❌ |
+| `findings:vulnerabilities:read` | ✅ | ✅ | ✅ |
+| `findings:vulnerabilities:write` | ✅ | ✅ | ❌ |
+| `findings:credentials:read` | ✅ | ✅ | ✅ |
+| `findings:credentials:write` | ✅ | ✅ | ❌ |
+| `findings:remediation:read` | ✅ | ✅ | ✅ |
+| `findings:remediation:write` | ✅ | ✅ | ❌ |
+| `findings:workflows:read` | ✅ | ✅ | ✅ |
+| `findings:workflows:write` | ✅ | ❌ | ❌ |
+| `findings:policies:read` | ✅ | ✅ | ✅ |
+| `findings:policies:write` | ✅ | ❌ | ❌ |
+
+### Scans Module
+
+| Permission | Administrator | Member | Viewer |
+|-----------|:-------------:|:------:|:------:|
+| `scans:read` | ✅ | ✅ | ✅ |
+| `scans:write` | ✅ | ✅ | ❌ |
+| `scans:delete` | ✅ | ❌ | ❌ |
+| `scans:execute` | ✅ | ✅ | ❌ |
+| `scans:profiles:read` | ✅ | ✅ | ✅ |
+| `scans:profiles:write` | ✅ | ✅ | ❌ |
+| `scans:sources:read` | ✅ | ✅ | ✅ |
+| `scans:sources:write` | ✅ | ✅ | ❌ |
+| `scans:tools:read` | ✅ | ✅ | ✅ |
+| `scans:tools:write` | ✅ | ❌ | ❌ |
+| `scans:tenant_tools:read` | ✅ | ✅ | ✅ |
+| `scans:tenant_tools:write` | ✅ | ✅ | ❌ |
+
+### Team Module (Access Control)
+
+| Permission | Administrator | Member | Viewer |
+|-----------|:-------------:|:------:|:------:|
+| `team:read` | ✅ | ✅ | ✅ |
+| `team:update` | ✅ | ❌ | ❌ |
+| `team:delete` | ✅ | ❌ | ❌ |
+| `team:members:read` | ✅ | ✅ | ✅ |
+| `team:members:invite` | ✅ | ❌ | ❌ |
+| `team:members:write` | ✅ | ❌ | ❌ |
+| `team:groups:read` | ✅ | ✅ | ✅ |
+| `team:groups:write` | ✅ | ❌ | ❌ |
+| `team:groups:delete` | ✅ | ❌ | ❌ |
+| `team:groups:members` | ✅ | ❌ | ❌ |
+| `team:groups:assets` | ✅ | ❌ | ❌ |
+| `team:roles:read` | ✅ | ✅ | ✅ |
+| `team:roles:write` | ✅ | ❌ | ❌ |
+| `team:roles:delete` | ✅ | ❌ | ❌ |
+| `team:roles:assign` | ✅ | ❌ | ❌ |
+| `team:permission_sets:read` | ✅ | ✅ | ✅ |
+| `team:permission_sets:write` | ✅ | ❌ | ❌ |
+| `team:assignment_rules:read` | ✅ | ✅ | ✅ |
+| `team:assignment_rules:write` | ✅ | ❌ | ❌ |
+
+### Integrations Module
+
+| Permission | Administrator | Member | Viewer |
+|-----------|:-------------:|:------:|:------:|
+| `integrations:read` | ✅ | ✅ | ✅ |
+| `integrations:manage` | ✅ | ❌ | ❌ |
+| `integrations:scm:read` | ✅ | ✅ | ✅ |
+| `integrations:scm:write` | ✅ | ❌ | ❌ |
+| `integrations:scm:delete` | ✅ | ❌ | ❌ |
+| `integrations:notifications:read` | ✅ | ✅ | ✅ |
+| `integrations:notifications:write` | ✅ | ❌ | ❌ |
+| `integrations:webhooks:read` | ✅ | ✅ | ✅ |
+| `integrations:webhooks:write` | ✅ | ❌ | ❌ |
+| `integrations:api_keys:read` | ✅ | ✅ | ❌ |
+| `integrations:api_keys:write` | ✅ | ❌ | ❌ |
+| `integrations:pipelines:read` | ✅ | ✅ | ✅ |
+| `integrations:pipelines:write` | ✅ | ✅ | ❌ |
+| `integrations:pipelines:execute` | ✅ | ✅ | ❌ |
+
+### Settings Module
+
+| Permission | Administrator | Member | Viewer |
+|-----------|:-------------:|:------:|:------:|
+| `settings:billing:read` | ✅ | ❌ | ❌ |
+| `settings:billing:write` | ✅ | ❌ | ❌ |
+| `settings:sla:read` | ✅ | ✅ | ✅ |
+| `settings:sla:write` | ✅ | ❌ | ❌ |
+
+### Other Modules
+
+| Permission | Administrator | Member | Viewer |
+|-----------|:-------------:|:------:|:------:|
+| `dashboard:read` | ✅ | ✅ | ✅ |
+| `audit:read` | ✅ | ❌ | ❌ |
+| `reports:read` | ✅ | ✅ | ✅ |
+| `reports:write` | ✅ | ✅ | ❌ |
+| `validation:read` | ✅ | ✅ | ✅ |
+| `validation:write` | ✅ | ✅ | ❌ |
+| `attack_surface:scope:read` | ✅ | ✅ | ✅ |
+| `attack_surface:scope:write` | ✅ | ✅ | ❌ |
+| `agents:read` | ✅ | ✅ | ✅ |
+| `agents:write` | ✅ | ✅ | ❌ |
+| `agents:commands:read` | ✅ | ✅ | ✅ |
+| `agents:commands:write` | ✅ | ✅ | ❌ |
+
+---
+
+## Backend Implementation
+
+### Permission Middleware
+
+```go
+// routes.go
+r.Route("/assets", func(r chi.Router) {
+    // Read endpoints
+    r.With(middleware.Require(permission.AssetsRead)).Get("/", h.List)
+    r.With(middleware.Require(permission.AssetsRead)).Get("/{id}", h.Get)
+
+    // Write endpoints
+    r.With(middleware.Require(permission.AssetsWrite)).Post("/", h.Create)
+    r.With(middleware.Require(permission.AssetsWrite)).Put("/{id}", h.Update)
+
+    // Delete endpoints
+    r.With(middleware.Require(permission.AssetsDelete)).Delete("/{id}", h.Delete)
+})
+```
+
+### Permission Check Types
+
+```go
+// Single permission check
+middleware.Require(permission.AssetsWrite)
+
+// Any of multiple permissions (OR logic)
+middleware.RequireAny(permission.AssetsRead, permission.RepositoriesRead)
+
+// All permissions required (AND logic)
+middleware.RequireAll(permission.AssetsWrite, permission.RepositoriesWrite)
+
+// Admin check (owner membership)
+middleware.RequireAdmin()
+```
+
+### Service Layer Permission Check
+
+```go
+// 3-Layer check in service
+func (s *AuthService) CheckPermission(ctx context.Context, userID, tenantID, permission string) error {
+    // Layer 1: Check tenant's plan includes the module
+    moduleSlug := extractModuleFromPermission(permission)
+    hasModule, err := s.licensingService.CheckModuleAccess(ctx, tenantID, moduleSlug)
+    if err != nil || !hasModule {
+        return ErrModuleNotInPlan
+    }
+
+    // Layer 2: Check user has permission via RBAC
+    hasPermission, err := s.roleService.HasPermission(ctx, tenantID, userID, permission)
+    if err != nil || !hasPermission {
+        return ErrPermissionDenied
+    }
+
+    // Layer 3: Data scope is checked at query level
+    return nil
+}
+```
+
+---
+
+## Frontend Implementation
+
+### Permission Hooks
+
+```typescript
+import { usePermissions, Permission } from '@/lib/permissions';
+
+const { can, canAny, canAll, permissions } = usePermissions();
+
+// Single permission check
+if (can(Permission.AssetsWrite)) {
+  // Show edit button
+}
+
+// Any of multiple permissions
+if (canAny(Permission.FindingsRead, Permission.DashboardRead)) {
+  // Show stats
+}
+
+// All permissions required
+if (canAll(Permission.AssetsWrite, Permission.AssetsDelete)) {
+  // Show bulk actions
+}
+```
+
+### Permission Guard Components
+
+```tsx
+import { Can, Permission } from '@/lib/permissions';
+
+// Hide mode (default) - completely hides if no permission
+<Can permission={Permission.AssetsWrite}>
+  <Button>Edit Asset</Button>
+</Can>
+
+// Disable mode - shows disabled button with tooltip
+<Can permission={Permission.AssetsDelete} mode="disable">
+  <Button>Delete Asset</Button>
+</Can>
+```
+
+### Module Access Check
+
+```typescript
+import { useTenantModules } from '@/features/integrations/api/use-tenant-modules';
+
+const { moduleIds, modules, eventTypes, isLoading } = useTenantModules();
+
+// Check if tenant has access to a module
+const hasFindings = moduleIds.includes('findings');
+```
+
+---
+
+## API Endpoints
+
+### Permissions
+
+```
+GET /api/v1/permissions              # List all available permissions
+GET /api/v1/permissions/modules      # List permission modules
+GET /api/v1/me/permissions           # Get current user's effective permissions
+```
+
+### Roles
+
+```
+GET    /api/v1/roles                 # List all roles
+POST   /api/v1/roles                 # Create custom role
+GET    /api/v1/roles/{id}            # Get role details
+PUT    /api/v1/roles/{id}            # Update role
+DELETE /api/v1/roles/{id}            # Delete custom role
+GET    /api/v1/users/{id}/roles      # Get user's roles
+PUT    /api/v1/users/{id}/roles      # Set user's roles
+```
+
+### Groups
+
+```
+GET    /api/v1/groups                # List groups
+POST   /api/v1/groups                # Create group
+GET    /api/v1/groups/{id}           # Get group details
+PUT    /api/v1/groups/{id}           # Update group
+DELETE /api/v1/groups/{id}           # Delete group
+GET    /api/v1/groups/{id}/members   # List group members
+POST   /api/v1/groups/{id}/members   # Add member
+GET    /api/v1/groups/{id}/assets    # List group assets
+POST   /api/v1/groups/{id}/assets    # Assign asset
+```
+
+### Licensing
+
+```
+GET /api/v1/plans                    # List public plans
+GET /api/v1/plans/{id}               # Get plan details
+GET /api/v1/me/modules               # Get tenant's enabled modules
+GET /api/v1/me/subscription          # Get tenant's subscription
+GET /api/v1/me/modules/{id}          # Check specific module access
+```
+
+---
+
+## Best Practices
+
+### 1. Principle of Least Privilege
+
+Start with minimal permissions and add as needed.
+
+### 2. Role Design
+
+- **Keep roles focused**: Each role should represent a job function
+- **Don't over-permission**: Avoid creating roles with all permissions
+- **Use descriptive names**: "Security Analyst" not "Role 1"
+
+### 3. Group Organization
+
+- **Map to org structure**: Teams, departments, projects
+- **Asset ownership**: Assign assets to groups that own them
+- **Avoid overlapping scope**: Clear boundaries between groups
+
+### 4. Regular Access Reviews
+
+- Review member list quarterly
+- Remove inactive members
+- Downgrade unused admin accounts
+
+---
+
+## Troubleshooting
+
+### User can't access a feature
+
+1. **Check tenant's plan**: Does the plan include the required module?
+2. **Check user's roles**: Does the user have the required permission?
+3. **Check role assignment**: Is the role properly assigned?
+
+### User can't see certain data
+
+1. **Check user's groups**: Are they in a group with access?
+2. **Check asset assignment**: Is the asset assigned to the group?
+3. **Check hasFullDataAccess**: Does user's role have full data access?
+
+### Permission changes not taking effect
+
+1. User may need to re-login (JWT refresh)
+2. Clear browser cookies
+3. Check if role was saved successfully
 
 ---
 
 ## Related Documentation
 
-- [Authentication Guide](./authentication.md) - Token generation
-- [API Reference](../api/reference.md) - Endpoint permissions
-- [Multi-tenancy Guide](./multi-tenancy.md) - Role hierarchy
+- [Roles and Permissions Guide](./roles-and-permissions.md)
+- [Group-Based Access Control](./group-based-access-control.md)
+- [Plans & Licensing](../operations/plans-licensing.md)
+- [Authentication Guide](./authentication.md)
+
+---
+
+**Last Updated**: 2026-01-22

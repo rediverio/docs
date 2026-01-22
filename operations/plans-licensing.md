@@ -1023,17 +1023,19 @@ POST   /api/v1/admin/tenants/{id}/subscription # Manually set subscription
 
 ## Implementation Checklist
 
-### Phase 1: Database & Backend Core
-- [ ] Create migration for modules table
-- [ ] Create migration for plans table
-- [ ] Create migration for plan_modules table
-- [ ] Add subscription fields to tenants table
-- [ ] Create licensing repository
-- [ ] Create licensing service
-- [ ] Implement module access check
-- [ ] Integrate with permission check
+### Phase 1: Database & Backend Core ✅ COMPLETE
+- [x] Create migration for modules table (`000058_plans_licensing.up.sql`)
+- [x] Create migration for plans table
+- [x] Create migration for plan_modules table
+- [x] Add subscription fields to tenants table
+- [x] Create licensing repository (`internal/infra/postgres/licensing_repository.go`)
+- [x] Create licensing service (`internal/app/licensing_service.go`)
+- [x] Create licensing handler (`internal/infra/http/handler/licensing_handler.go`)
+- [x] Register routes (`/api/v1/plans`, `/api/v1/me/modules`, `/api/v1/me/subscription`)
+- [x] Wire up in main.go
+- [ ] Integrate with permission middleware (3-layer check)
 
-### Phase 2: Stripe Integration
+### Phase 2: Stripe Integration ❌ NOT STARTED
 - [ ] Set up Stripe account and products
 - [ ] Create billing service
 - [ ] Implement checkout session creation
@@ -1041,22 +1043,43 @@ POST   /api/v1/admin/tenants/{id}/subscription # Manually set subscription
 - [ ] Handle subscription lifecycle events
 - [ ] Create customer portal integration
 
-### Phase 3: Frontend
-- [ ] Create licensing types
-- [ ] Create hooks (useModuleAccess, useTenantModules, etc.)
+### Phase 3: Frontend ⚠️ PARTIAL
+- [x] Create licensing types (`LicensingModule`, `TenantModulesResponse`)
+- [x] Create useTenantModules hook (`use-tenant-modules.ts`)
+- [x] Integrate with notification dialogs (event type filtering)
 - [ ] Create ModuleGate component
 - [ ] Create UpgradePrompt component
+- [ ] Create LimitIndicator component
 - [ ] Update sidebar with module gates
 - [ ] Create billing settings page
 - [ ] Create plan selection UI
 
-### Phase 4: Polish & Testing
-- [ ] Add usage tracking
+### Phase 4: Polish & Testing ❌ NOT STARTED
+- [ ] Add usage tracking (`usage_records` table)
 - [ ] Implement limit checks
 - [ ] Add upgrade/downgrade flows
 - [ ] Add trial period handling
 - [ ] Test all subscription states
 - [ ] Add billing emails
+
+### Actual API Endpoints (Implemented)
+
+```
+# Plans (Public)
+GET /api/v1/plans                    # List all public plans ✅
+GET /api/v1/plans/{id}               # Get plan details ✅
+
+# Modules (Public)
+GET /api/v1/modules                  # List all active modules ✅
+
+# Tenant's Modules (Requires Auth)
+GET /api/v1/me/modules               # Get tenant's enabled modules ✅
+GET /api/v1/me/modules/{id}          # Check specific module access ✅
+GET /api/v1/me/modules/{id}/limit    # Get module limit ✅
+
+# Tenant Subscription (Requires Auth)
+GET /api/v1/me/subscription          # Get tenant's subscription ✅
+```
 
 ## Environment Variables
 
