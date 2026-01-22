@@ -2,28 +2,50 @@
 layout: default
 title: Home
 nav_order: 1
+has_children: true
+permalink: /
 ---
 
 # RediverIO Platform Documentation
 
-Welcome to the official documentation for the **RediverIO Platform Workspace**. This site hosts guides for developers, contributors, and operators of the RediverIO ecosystem.
+Welcome to the RediverIO Platform documentation. This portal provides comprehensive guides for architecture, development, and operations.
 
-## 🚀 Getting Started
+## 📚 Documentation Sections
 
-If you are new to the project, start here:
+### [🏗️ Architecture](./architecture/index.md)
+High-level system design, data flow patterns, and technology choices.
+- **[System Overview](./architecture/system-overview.md)**
+- **[Data Flow](./architecture/data-flow.md)**
 
-*   [Development Guide](DEVELOPMENT.md): Learn how to set up your environment, use the `go.work` workspace, and contribute code.
-*   [Architecture Overview](architecture/index.md): High-level overview of how API, Agent, and UI interact.
+### [💻 Backend Services](./backend/index.md)
+Documentation for the Go-based API and Agent services.
+- **[Service Overview](./backend/index.md)**
+- **[API Reference](./backend/api-reference.md)**
 
-## 📂 Repositories
+### [🎨 User Interface](./ui/documentation-overview.md)
+Frontend documentation for the Next.js dashboard.
+- **[Development Guides](./ui/guides/api-integration.md)**
+- **[Feature Docs](./ui/features/auth/README.md)**
+- **[Operations](./ui/ops/deployment.md)**
 
-The platform consists of several key repositories:
+### [🗄️ Database](./database/index.md)
+Data models, schema definitions, and migration strategies.
+- **[Schema Overview](./database/schema.md)**
+- **[Migrations](./database/migrations.md)**
 
-*   **[API](https://github.com/rediverio/api)**: The brain of the operation.
-*   **[Agent](https://github.com/rediverio/agent)**: The distributed scanner.
-*   **[UI](https://github.com/rediverio/ui)**: The management dashboard.
-*   **[SDK](https://github.com/rediverio/sdk)**: Shared Go libraries.
+---
 
-## 🛠 Support
+## 🚀 Quick Links
 
-For issues, please file tickets in the respective repositories or use the [Main Tracker](https://github.com/rediverio/rediver-platform/issues).
+| Resource | Description |
+|----------|-------------|
+| **[Getting Started](./ui/documentation-overview.md#quick-start-protocols)** | Setup guide for new developers |
+| **[API Reference](./backend/api-reference.md)** | Endpoints and request schemas |
+| **[Deployment](./ui/ops/deployment.md)** | Production deployment guide |
+| **[Access Control](./ui/features/access-control.md)** | RBAC and permission system |
+
+---
+
+## 🤝 Contributing
+
+Please refer to the [Root README](../README.md) for contribution guidelines and workspace setup.

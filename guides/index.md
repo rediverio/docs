@@ -17,7 +17,8 @@ Comprehensive guides for using the Rediver CTEM Platform.
 |-------|-------------|
 | [Authentication](authentication.md) | Login, tokens, sessions |
 | [Multi-Tenancy](multi-tenancy.md) | Teams, tenant switching |
-| [Roles & Permissions](roles-and-permissions.md) | RBAC, permission matrix |
+| [Group-Based Access Control](group-based-access-control.md) | Groups, permission sets, team structure |
+| [Roles & Permissions](roles-and-permissions.md) | Legacy RBAC reference |
 
 ---
 
