@@ -678,9 +678,16 @@ kubectl exec -it deployment/rediver-ui --namespace rediver -- curl http://redive
 
 ## Next Steps
 
-- **[Monitoring Guide](./MONITORING.md)** - Set up Prometheus/Grafana
-- **[Security Best Practices](../guides/SECURITY.md)** - Hardening guide
-- **[Scaling Guide](./SCALING.md)** - Performance optimization
+### Further Reading
+
+- **Security Best Practices** - Coming in Tier 2 documentation
+- **Monitoring & Alerting** - Coming in Tier 2 documentation  
+- **Performance Optimization** - Coming in Tier 2 documentation
+
+For now, refer to:
+- [Architecture Overview](../architecture/overview.md)
+- [End-to-End Workflow](../guides/END_TO_END_WORKFLOW.md)
+- [Agent Quick Start](../../agent/docs/QUICK_START.md)
 
 ---
 
