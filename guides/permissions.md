@@ -512,6 +512,39 @@ GET /api/v1/me/modules/{id}          # Check specific module access
 
 ---
 
+## Real-time Permission Sync
+
+### X-Permission-Version Header
+
+The API includes an `X-Permission-Version` header in all authenticated responses. This enables real-time permission updates without WebSockets or polling.
+
+**How it works:**
+
+1. Every API response includes `X-Permission-Version: <timestamp>`
+2. When permissions change (role update, etc.), the version is incremented
+3. Frontend compares response header with stored version
+4. If version changes, frontend refreshes permissions from `/api/v1/me/permissions`
+
+**Frontend Implementation:**
+
+```typescript
+// In axios/fetch interceptor
+const newVersion = response.headers.get('X-Permission-Version');
+if (newVersion && newVersion !== storedVersion) {
+  // Permission changed, refresh from API
+  await refreshPermissions();
+  storedVersion = newVersion;
+}
+```
+
+**Benefits:**
+- No WebSocket complexity
+- No constant polling
+- Permissions refresh only when changed
+- Works with existing HTTP infrastructure
+
+---
+
 ## Best Practices
 
 ### 1. Principle of Least Privilege
@@ -554,9 +587,12 @@ Start with minimal permissions and add as needed.
 
 ### Permission changes not taking effect
 
-1. User may need to re-login (JWT refresh)
-2. Clear browser cookies
-3. Check if role was saved successfully
+1. Check `X-Permission-Version` header in API responses
+2. Frontend should auto-refresh when version changes
+3. If still not working, check Redis cache invalidation
+4. User may need to re-login (JWT refresh)
+5. Clear browser cookies
+6. Check if role was saved successfully
 
 ---
 
@@ -569,4 +605,4 @@ Start with minimal permissions and add as needed.
 
 ---
 
-**Last Updated**: 2026-01-22
+**Last Updated**: 2026-01-23

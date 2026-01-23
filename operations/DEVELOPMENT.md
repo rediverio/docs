@@ -161,3 +161,163 @@ If VSCode complains about modules:
 docker compose down -v
 docker system prune -a
 ```
+
+---
+
+## Permission System (Hybrid JWT + Redis)
+
+### Overview
+
+RediverIO uses a **hybrid JWT + Redis permission system**:
+- **JWT tokens** contain minimal user identity (~200 bytes)
+- **Permissions** are fetched from Redis cache (<1ms) or PostgreSQL
+
+See [Authentication Guide](../guides/authentication.md) for full details.
+
+### Permission Check Examples
+
+#### Backend: Middleware Permission Checks
+
+```go
+// File: api/internal/infra/http/routes.go
+
+// Protect a route with specific permission
+r.With(middleware.Require("assets:write")).Post("/assets", handler.CreateAsset)
+
+// Multiple permission options (OR logic)
+r.With(middleware.RequireAny("tenants:admin", "tenants:write")).Put("/tenants/{id}", handler.UpdateTenant)
+
+// Check permission programmatically
+func (h *AssetHandler) DeleteAsset(w http.ResponseWriter, r *http.Request) {
+    if !middleware.HasPermission(r.Context(), "assets:delete") {
+        http.Error(w, "Forbidden", http.StatusForbidden)
+        return
+    }
+    // ... deletion logic
+}
+```
+
+#### Backend: Service Layer Permission Loading
+
+```go
+// File: api/internal/app/permission_service.go
+
+// Get user permissions (hybrid Redis + DB)
+permissions, err := permissionService.GetUserPermissionsFromCache(
+    ctx,
+    userID,     // "66666666-6666-6666-6666-666666666666"
+    tenantID,   // "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+)
+// Returns: ["assets:read", "assets:write", "findings:read"]
+
+// Invalidate cache when role changes
+err = permissionService.InvalidateUserPermissionsCache(ctx, userID, tenantID)
+
+// Invalidate all tenants for a user
+err = permissionService.InvalidateAllUserPermissionsCache(ctx, userID)
+
+// Preload permissions (e.g., after login)
+err = permissionService.PreloadUserPermissionsToCache(ctx, userID, tenantID)
+```
+
+#### Frontend: Permission Checks in Components
+
+```typescript
+// File: ui/src/components/AssetActions.tsx
+import { usePermissions } from '@/lib/permissions/hooks'
+
+function AssetActions() {
+  const { hasPermission } = usePermissions()
+  
+  return (
+    <>
+      {hasPermission('assets:read') && <ViewButton />}
+      {hasPermission('assets:write') && <EditButton />}
+      {hasPermission('assets:delete') && <DeleteButton />}
+    </>
+  )
+}
+```
+
+#### Frontend: Permission Gate
+
+```typescript
+// File: ui/src/components/ProtectedSection.tsx
+import { PermissionGate } from '@/components/permission-gate'
+
+function AdminPanel() {
+  return (
+    <PermissionGate permission="tenants:admin">
+      <AdminSettings />
+    </PermissionGate>
+  )
+}
+```
+
+#### Frontend: Fetching Permissions
+
+Permissions are automatically fetched after login:
+
+```typescript
+// File: ui/src/stores/auth-store.ts
+login: (accessToken: string) => {
+  set({ accessToken, status: 'authenticated' })
+  
+  // Auto-fetch permissions from /api/v1/me/permissions
+  get().loadPermissions()
+}
+
+loadPermissions: async () => {
+  const response = await fetch('/api/v1/me/permissions', {
+    credentials: 'include',
+  })
+  const data = await response.json()
+  set({ permissions: data.permissions || [] })
+}
+```
+
+### Permission Naming Conventions
+
+Use the format: `resource:action`
+
+Examples:
+```
+assets:read
+assets:write
+assets:delete
+tenants:admin
+findings:read
+users:write
+```
+
+### Testing Permissions
+
+```bash
+# 1. Get your access token after login
+curl -X POST http://localhost:8080/api/v1/auth/login \
+  -d '{"email":"user@example.com","password":"pass"}' \
+  | jq -r '.access_token'
+
+# 2. Check your permissions
+curl http://localhost:8080/api/v1/me/permissions \
+  -H "Cookie: refresh_token=..."
+  
+# Response:
+# {
+#   "user_id": "...",
+#   "tenant_id": "...",
+#   "permissions": ["assets:read", "assets:write"],
+#   "group_count": 0
+# }
+
+# 3. Test a protected endpoint
+curl http://localhost:8080/api/v1/assets \
+  -H "Authorization: Bearer <access_token>"
+```
+
+### Related Documentation
+
+- [JWT Structure](../backend/jwt-structure.md) - Token format and claims
+- [Redis Setup](./redis-setup.md) - Permission cache configuration
+- [Authentication Guide](../guides/authentication.md) - Full system overview
+- [Permissions Guide](../guides/permissions.md) - Permission model details

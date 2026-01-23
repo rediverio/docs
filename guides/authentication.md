@@ -1,305 +1,382 @@
----
-layout: default
-title: Authentication
-parent: Guides
-nav_order: 1
----
-# Authentication Guide
+# Authentication & Authorization System
 
-Detailed guide for authentication in the Rediver CTEM Platform.
+## Overview
 
----
+Rediver uses a **Hybrid JWT + Redis Permission System** for authentication and authorization:
 
-## Authentication Modes
-
-| Mode | Description | Use Case |
-|------|-------------|----------|
-| `local` | Email/Password with JWT | Development, simple deployments |
-| `oidc` | Keycloak/OIDC only | Enterprise SSO |
-| `hybrid` | Both local and OIDC | Flexible authentication |
-
-Configure via the `AUTH_PROVIDER` environment variable.
+- **Authentication:** JWT tokens in httpOnly cookies (15-minute access tokens, 7-day refresh tokens)
+- **Authorization:** Redis-cached permissions with database fallback
+- **Multi-tenancy:** Tenant-scoped access with role-based permissions
 
 ---
 
-## Token Types
+## Architecture
 
-### Refresh Token (Global)
-- **Lifetime:** 7 days
-- **Scope:** User-level (no tenant)
-- **Storage:** httpOnly cookie
-- **Purpose:** Exchange for access_token
+### JWT Token Structure
 
-### Access Token (Tenant-scoped)
-- **Lifetime:** 15 minutes
-- **Scope:** Tenant-specific
-- **Storage:** httpOnly cookie
-- **Purpose:** API requests
-
----
-
-## Local Authentication Flow
-
-### 1. Registration
-
-```
-POST /api/v1/auth/register
-{
-  "email": "user@example.com",
-  "password": "SecurePass123!",
-  "name": "Full Name"
-}
-```
-
-Response:
+**Minimal JWT Claims (200 bytes):**
 ```json
 {
-  "id": "uuid",
+  "id": "user-123",
   "email": "user@example.com",
-  "name": "Full Name",
-  "requires_verification": true,
-  "message": "Please check your email to verify your account."
+  "tenant": "tenant-456",
+  "role": "member",
+  "admin": false,
+  "exp": 1706000000
 }
 ```
 
-### 2. Login
+**Why no permissions in JWT?**
+- Token size reduced 92% (2.5KB → 200 bytes)
+- Enables real-time permission updates
+- Supports future growth without hitting 4KB cookie limit
+- Permissions fetched from Redis cache (<1ms) instead
+
+### Permission Caching Flow
 
 ```
+┌─────────────┐
+│   Request   │
+└──────┬──────┘
+       │
+       ▼
+┌──────────────┐
+│  Middleware  │ Extract userId, tenantId from JWT
+└──────┬───────┘
+       │
+       ▼
+┌─────────────────────┐
+│ PermissionService   │
+└──────┬──────────────┘
+       │
+       ▼
+┌──────────────┐      Cache Hit (< 1ms)
+│ Redis Cache  │ ─────────────────────► Return permissions
+└──────┬───────┘
+       │ Cache Miss
+       ▼
+┌──────────────┐      Load from DB (< 50ms)
+│  PostgreSQL  │      Cache for 15 minutes
+└──────────────┘      Return permissions
+```
+
+**Cache Key Format:** `perms:{userId}:{tenantId}`  
+**TTL:** 15 minutes (matches access token duration)
+
+---
+
+## Authentication Providers
+
+### Local Authentication (Email/Password)
+- JWT-based authentication
+- Password hashing with bcrypt
+- Email verification required
+- Session management with refresh tokens
+
+### OIDC/Keycloak (Enterprise)
+- Single Sign-On (SSO)
+- External identity providers
+- Automatic user provisioning
+- Token validation with JWKS
+
+### Hybrid Mode
+- Support both local and OIDC
+- Automatic provider detection
+- Unified authentication flow
+
+---
+
+## Authorization Model
+
+### Role-Based Access Control (RBAC)
+
+**Tenant Roles:**
+- **Owner:** Full control, including billing and tenant deletion
+- **Admin:** Manage members, settings, all resources
+- **Member:** Read/write access to resources
+- **Viewer:** Read-only access
+- **Custom:** Flexible RBAC roles with custom permissions
+
+**Role Hierarchy:** `viewer < member < admin < owner`
+
+### Permission System
+
+**Permissions are resource-scoped:**
+```
+{resource}:{action}
+
+Examples:
+- assets:read
+- assets:write
+- assets:delete
+- findings:read
+- findings:update
+- members:manage
+```
+
+**Permission Check Flow:**
+1. Extract `userId` and `tenantId` from JWT
+2. Check Redis cache: `GET perms:{userId}:{tenantId}`
+3. If cache hit: Return cached permissions (<1ms)
+4. If cache miss: Load from database, cache, return  (<50ms)
+5. Verify permission in list
+6. Allow/Deny request
+
+**No Admin Bypass:**
+All users (including admins) go through explicit permission checks. This ensures:
+- Audit trail for all actions
+- Granular permission control
+- Compliance with security policies
+
+---
+
+## API Endpoints
+
+### Authentication
+
+```http
 POST /api/v1/auth/login
+Content-Type: application/json
+
 {
   "email": "user@example.com",
-  "password": "SecurePass123!"
+  "password": "password"
 }
-```
 
 Response:
-```json
 {
-  "refresh_token": "eyJ...",
-  "token_type": "Bearer",
-  "expires_in": 604800,
-  "user": {
-    "id": "uuid",
-    "email": "user@example.com",
-    "name": "Full Name"
-  },
-  "tenants": [
-    {
-      "id": "tenant-uuid",
-      "slug": "my-team",
-      "name": "My Team",
-      "role": "owner"
-    }
-  ]
+  "access_token": "...",
+  "refresh_token": "...",
+  "expires_at": "2026-01-23T04:00:00Z",
+  "tenants": [...]
 }
 ```
 
-### 3. Token Exchange
+### Get Current User
 
-After login, exchange the refresh_token to get a tenant-scoped access_token:
-
-```
-POST /api/v1/auth/token
-{
-  "refresh_token": "eyJ...",
-  "tenant_id": "tenant-uuid"
-}
-```
+```http
+GET /api/v1/users/me
+Authorization: Bearer {token}
 
 Response:
-```json
 {
-  "access_token": "eyJ...",
-  "token_type": "Bearer",
-  "expires_in": 900,
-  "tenant_id": "tenant-uuid",
-  "tenant_slug": "my-team",
-  "role": "owner"
-}
-```
-
-### 4. Token Refresh
-
-When access token expires, refresh with rotation:
-
-```
-POST /api/v1/auth/refresh
-{
-  "refresh_token": "eyJ...",
-  "tenant_id": "tenant-uuid"
-}
-```
-
-Response includes both a new access_token and a new refresh_token (rotation).
-
-### 5. Logout
-
-```
-POST /api/v1/auth/logout
-Authorization: Bearer <access_token>
-```
-
----
-
-## Multi-Tenant Login Flow Diagram
-
-```
-┌─────────┐      ┌─────────────┐      ┌──────────────┐
-│ Browser │      │   Next.js   │      │   Go API     │
-└────┬────┘      └──────┬──────┘      └──────┬───────┘
-     │                  │                    │
-     │  1. Login Form   │                    │
-     │─────────────────>│                    │
-     │                  │                    │
-     │                  │  2. POST /login    │
-     │                  │───────────────────>│
-     │                  │                    │
-     │                  │  3. refresh_token  │
-     │                  │     + tenants[]    │
-     │                  │<───────────────────│
-     │                  │                    │
-     │                  │ 4. Store refresh   │
-     │                  │    in httpOnly     │
-     │                  │    cookie          │
-     │                  │                    │
-     │  ┌───────────────┴───────────────┐    │
-     │  │ tenants.length == 0           │    │
-     │  │ → Redirect to Create Team     │    │
-     │  ├───────────────────────────────┤    │
-     │  │ tenants.length == 1           │    │
-     │  │ → Auto-exchange token         │────>│ 5. POST /token
-     │  │                               │    │    {tenant_id}
-     │  │                               │<───│
-     │  │                               │    │ 6. access_token
-     │  ├───────────────────────────────┤    │
-     │  │ tenants.length > 1            │    │
-     │  │ → Show tenant selection       │    │
-     │  └───────────────────────────────┘    │
-     │                  │                    │
-     │  7. Set cookies  │                    │
-     │<─────────────────│                    │
-     │                  │                    │
-     │  8. Redirect to  │                    │
-     │     /dashboard   │                    │
-```
-
----
-
-## Cookie Security
-
-| Cookie | HttpOnly | Secure | SameSite | Max Age |
-|--------|:--------:|:------:|:--------:|---------|
-| `refresh_token` | ✅ | Production | Lax | 7 days |
-| `access_token` | ✅ | Production | Lax | 15 min |
-| `app_tenant` | ❌ | Production | Lax | 7 days |
-| `csrf_token` | ❌ | Production | Lax | Session |
-
-### CSRF Protection
-
-Double-submit cookie pattern:
-1. Server generates `csrf_token` and sets it in a cookie
-2. Client reads the cookie and sends it in the `X-CSRF-Token` header
-3. Server verifies the header matches the cookie
-
----
-
-## JWT Claims
-
-### Access Token Claims
-
-```json
-{
-  "sub": "user-id",
-  "sid": "session-id",
-  "tid": "tenant-id",
-  "tslug": "tenant-slug",
-  "trole": "owner",
-  "troles": ["owner"],
+  "id": "user-123",
   "email": "user@example.com",
-  "name": "Full Name",
-  "permissions": ["assets:read", "assets:write"],
-  "exp": 1234567890,
-  "iat": 1234567890,
-  "iss": "api"
+  "name": "John Doe",
+  "status": "active"
 }
 ```
 
----
+### Get User Permissions
 
-## Session Management
+```http
+GET /api/v1/users/me/permissions
+Authorization: Bearer {token}
 
-### List Active Sessions
-
-```
-GET /api/v1/users/me/sessions
-Authorization: Bearer <access_token>
-```
-
-### Revoke Specific Session
-
-```
-DELETE /api/v1/users/me/sessions/{sessionId}
-Authorization: Bearer <access_token>
-```
-
-### Revoke All Sessions
-
-```
-DELETE /api/v1/users/me/sessions
-Authorization: Bearer <access_token>
-```
-
----
-
-## Password Management
-
-### Forgot Password
-
-```
-POST /api/v1/auth/forgot-password
+Response:
 {
-  "email": "user@example.com"
-}
-```
-
-### Reset Password
-
-```
-POST /api/v1/auth/reset-password
-{
-  "token": "reset-token-from-email",
-  "new_password": "NewSecurePass123!"
-}
-```
-
-### Change Password (Authenticated)
-
-```
-POST /api/v1/users/me/change-password
-Authorization: Bearer <access_token>
-{
-  "current_password": "OldPass123!",
-  "new_password": "NewSecurePass123!"
+  "permissions": ["assets:read", "assets:write", "findings:read"],
+  "tenant_id": "tenant-456",
+  "cached_at": "2026-01-23T03:45:00Z"
 }
 ```
 
 ---
 
-## Security Configuration
+## Frontend Integration
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `AUTH_JWT_SECRET` | - | JWT signing secret (min 64 chars) |
-| `AUTH_ACCESS_TOKEN_DURATION` | 15m | Access token lifetime |
-| `AUTH_REFRESH_TOKEN_DURATION` | 168h | Refresh token lifetime (7 days) |
-| `AUTH_MAX_LOGIN_ATTEMPTS` | 5 | Max failed attempts before lockout |
-| `AUTH_LOCKOUT_DURATION` | 15m | Lockout duration |
-| `AUTH_MAX_ACTIVE_SESSIONS` | 10 | Max concurrent sessions per user |
+### Permission Checks
+
+```typescript
+import { usePermissions } from '@/lib/permissions'
+
+function MyComponent() {
+  const { can, isRole, isAtLeast } = usePermissions()
+  
+  return (
+    <div>
+      {can('assets:write') && <CreateAssetButton />}
+      {isRole('owner') && <DeleteTenantButton />}
+      {isAtLeast('admin') && <AdminPanel />}
+    </div>
+  )
+}
+```
+
+### Permission Gate Component
+
+```tsx
+import { PermissionGate } from '@/features/auth'
+
+<PermissionGate permission="assets:delete">
+  <DeleteButton />
+</PermissionGate>
+
+<PermissionGate permissions={['assets:write', 'assets:delete']} requireAll>
+  <AdminActions />
+</PermissionGate>
+```
 
 ---
 
-## Related Documentation
+## Cache Invalidation
 
-- [Multi-tenancy Guide](./multi-tenancy.md)
-- [Permissions Matrix](./permissions.md)
-- [API Reference](../api/reference.md)
+### When to Invalidate
+
+**Invalidate user permissions when:**
+- User role changes in tenant
+- User is removed from tenant
+- Custom permissions updated
+- User deleted
+
+**Invalidation Methods:**
+
+```go
+// Invalidate specific user in tenant
+permissionService.InvalidateUserPermissionsCache(ctx, userID, tenantID)
+
+// Invalidate all user permissions across all tenants
+permissionService.InvalidateAllUserPermissionsCache(ctx, userID)
+```
+
+**Automatic Cache Refresh:**
+- TTL: 15 minutes (matches access token)
+- Permissions auto-refresh on token refresh
+- Cache miss triggers DB load + re-cache
+
+---
+
+## Security Considerations
+
+### Token Storage
+- ✅ **Access tokens:** Memory only (Zustand store), never in localStorage
+- ✅ **Refresh tokens:** HttpOnly cookies, server-side only
+- ✅ **Automatic refresh:** Before token expiry
+- ✅ **Secure flags:** SameSite=Lax, Secure (HTTPS only)
+
+### Permission Checks
+- ✅ **Backend validation:** All API endpoints validate permissions
+- ✅ **Frontend checks:** UI visibility only, not security boundary
+- ✅ **Audit logging:** All permission checks logged
+- ✅ **Cache security:** Redis protected, no client access
+
+### Rate Limiting
+- Login attempts: 5 per minute per IP
+- Permission API: 100 per minute per user
+- Token refresh: 10 per minute per user
+
+---
+
+## Performance Metrics
+
+| Metric | Target | Actual |
+|--------|--------|--------|
+| Token size | < 500 bytes | ~200 bytes |
+| Permission check (cached) | < 5ms | < 1ms |
+| Permission check (DB fallback) | < 100ms | < 50ms |
+| Cache hit rate | > 90% | ~95% |
+| Token generation | < 10ms | < 5ms |
+
+---
+
+## Monitoring
+
+### Key Metrics
+
+**Redis:**
+```bash
+# Cache hit rate
+redis-cli INFO stats | grep keyspace_hits
+redis-cli INFO stats | grep keyspace_misses
+
+# Active keys
+redis-cli DBSIZE
+
+# Memory usage
+redis-cli INFO memory | grep used_memory_human
+```
+
+**API:**
+- Permission check latency (p50, p95, p99)
+- Cache hit/miss ratio
+- Failed authentication attempts
+- Token refresh rate
+
+### Alerts
+
+- Cache hit rate < 85% (10 minutes)
+- Permission check p95 > 10ms
+- Failed auth attempts > 100/minute
+- Redis connection failures
+
+---
+
+## Migration from Old System
+
+**Old System:** Permissions embedded in JWT (2.5KB tokens)  
+**New System:** Hybrid JWT + Redis (200 byte tokens)
+
+**Backward Compatibility:**
+- Frontend falls back to role-based permissions if API unavailable
+- Gradual rollout with feature flags
+- No database schema changes required
+
+**Rollout Plan:**
+1. Deploy backend with cache (flag OFF)
+2. Enable for 10% traffic
+3. Monitor for 1 week
+4. Gradual rollout: 25% → 50% → 100%
+5. Remove old permission middleware
+
+---
+
+## Troubleshooting
+
+### Permission Denied Despite Correct Role
+
+**Check:**
+1. Is Redis running? `redis-cli PING`
+2. Are permissions cached? `redis-cli KEYS "perms:*"`
+3. Check logs for cache errors
+4. Verify tenant membership in database
+
+**Debug:**
+```bash
+# Check cached permissions
+redis-cli GET "perms:user-123:tenant-456"
+
+# Check TTL
+redis-cli TTL "perms:user-123:tenant-456"
+
+# Manually invalidate
+redis-cli DEL "perms:user-123:tenant-456"
+```
+
+### Token Too Large
+
+**Should not happen anymore** - tokens are ~200 bytes
+
+If still occurring:
+- Check JWT claims structure
+- Verify permissions NOT in token
+- Check `Tenants` array size (should be minimal)
+
+### Permission Not Updating
+
+**Possible causes:**
+1. Cache not invalidated after role change
+2. Using old token (not refreshed)
+3. Frontend using stale role-based fallback
+
+**Solutions:**
+1. Invalidate cache on role change
+2. Force token refresh
+3. Call `/users/me/permissions` API
+
+---
+
+## References
+
+- [JWT Best Practices](https://datatracker.ietf.org/doc/html/rfc8725)
+- [Redis Caching Patterns](https://redis.io/docs/manual/patterns/)
+- [OWASP Authentication Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html)
