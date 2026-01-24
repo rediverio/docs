@@ -1,3 +1,10 @@
+---
+layout: default
+title: User Notification Inbox
+parent: Architecture
+nav_order: 26
+---
+
 # User Notification Inbox
 
 ## Technical Specification Document

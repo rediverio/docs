@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Multi-Tenancy
-parent: Guides
+parent: Platform Guides
 nav_order: 2
 ---
 # Multi-Tenancy Guide

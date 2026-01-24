@@ -1,3 +1,10 @@
+---
+layout: default
+title: Module Permission Filtering
+parent: Architecture
+nav_order: 20
+---
+
 # Module Permission Filtering
 
 ## Technical Specification Document

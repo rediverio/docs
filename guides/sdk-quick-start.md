@@ -1,7 +1,7 @@
 ---
 layout: default
 title: SDK Quick Start
-parent: Guides
+parent: Platform Guides
 nav_order: 10
 ---
 

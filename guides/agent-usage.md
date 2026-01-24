@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Agent Usage Guide
-parent: Guides
+parent: Platform Guides
 nav_order: 12
 ---
 

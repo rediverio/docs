@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Roles and Permissions
-parent: Guides
+parent: Platform Guides
 nav_order: 5
 ---
 

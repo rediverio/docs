@@ -1,3 +1,10 @@
+---
+layout: default
+title: Permission Real-time Synchronization
+parent: Architecture
+nav_order: 22
+---
+
 # Permission Real-time Synchronization
 
 ## Technical Specification Document

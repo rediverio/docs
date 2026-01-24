@@ -2,6 +2,7 @@
 layout: default
 title: Architecture Overview
 parent: UI Documentation
+nav_order: 4
 ---
 
 # Architecture Overview

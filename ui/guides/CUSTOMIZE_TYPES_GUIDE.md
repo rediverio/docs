@@ -2,6 +2,7 @@
 layout: default
 parent: UI Guides
 grand_parent: UI Documentation
+nav_order: 5
 ---
 # Customize Types Guide
 

@@ -1,3 +1,10 @@
+---
+layout: default
+title: Plans & Licensing
+parent: Operations
+nav_order: 10
+---
+
 # Plans & Licensing System
 
 > Implementation guide for multi-tenant subscription plans with Stripe integration

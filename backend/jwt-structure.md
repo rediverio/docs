@@ -1,7 +1,7 @@
 ---
 layout: default
 title: JWT Token Structure
-parent: Backend
+parent: Backend Services
 nav_order: 3
 ---
 

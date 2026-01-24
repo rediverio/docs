@@ -1,3 +1,11 @@
+---
+layout: default
+title: Redis Caching Optimization
+parent: Implementation Plans
+grand_parent: Architecture
+nav_order: 2
+---
+
 # API Caching Optimization & Redis Integration Plan
 
 ## Goal

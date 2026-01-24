@@ -1,3 +1,10 @@
+---
+layout: default
+title: Examples
+parent: UI Documentation
+nav_order: 10
+---
+
 # Examples Folder
 
 This folder contains **example/template files** for reference only.

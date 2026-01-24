@@ -1,3 +1,10 @@
+---
+layout: default
+title: Notification Outbox Pattern
+parent: Architecture
+nav_order: 21
+---
+
 # Notification Outbox Pattern
 
 ## Overview

@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Building Ingestion Tools
-parent: Guides
+parent: Platform Guides
 nav_order: 9
 ---
 # Building Ingestion Tools

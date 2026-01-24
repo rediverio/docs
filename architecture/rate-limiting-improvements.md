@@ -1,3 +1,10 @@
+---
+layout: default
+title: Rate Limiting Improvements
+parent: Architecture
+nav_order: 23
+---
+
 # Rate Limiting Improvements Plan
 
 > Implementation plan for enhancing the rate limiting system to production-grade for multi-instance deployments.

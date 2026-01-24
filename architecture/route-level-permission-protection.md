@@ -1,3 +1,10 @@
+---
+layout: default
+title: Route-Level Permission Protection
+parent: Architecture
+nav_order: 24
+---
+
 # Route-Level Permission Protection
 
 ## Technical Specification Document

@@ -1,3 +1,11 @@
+---
+layout: default
+title: Implementation Plans
+parent: Architecture
+has_children: true
+nav_order: 50
+---
+
 # Implementation Plans
 
 This folder contains detailed implementation plans for future features and improvements that are planned but not yet implemented.

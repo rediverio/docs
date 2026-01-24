@@ -2,6 +2,7 @@
 layout: default
 title: Feature Roadmap
 parent: UI Documentation
+nav_order: 5
 ---
 
 # Feature Roadmap

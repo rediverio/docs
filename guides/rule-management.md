@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Rule Management
-parent: Guides
+parent: Platform Guides
 nav_order: 7
 ---
 

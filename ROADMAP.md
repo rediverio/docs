@@ -1,3 +1,9 @@
+---
+layout: default
+title: Roadmap
+nav_order: 100
+---
+
 # Feature Roadmap
 
 **Last Updated:** 2026-01-23

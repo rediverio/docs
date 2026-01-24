@@ -2,6 +2,7 @@
 layout: default
 parent: UI Guides
 grand_parent: UI Documentation
+nav_order: 3
 ---
 # Assets API Integration Guide
 

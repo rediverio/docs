@@ -2,6 +2,7 @@
 layout: default
 parent: UI Operations
 grand_parent: UI Documentation
+nav_order: 5
 ---
 # Docker & Sentry Setup Guide
 

@@ -1,3 +1,10 @@
+---
+layout: default
+title: Authentication & Authorization
+parent: Platform Guides
+nav_order: 1
+---
+
 # Authentication & Authorization System
 
 ## Overview

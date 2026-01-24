@@ -1,3 +1,11 @@
+---
+layout: default
+title: API Optimization Plan
+parent: Implementation Plans
+grand_parent: Architecture
+nav_order: 1
+---
+
 # API Optimization Plan - Reduce Initial Load Requests
 
 > Tối ưu từ 4+ API calls xuống 1 call sau login

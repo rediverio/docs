@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Permission System
-parent: Guides
+parent: Platform Guides
 nav_order: 3
 ---
 

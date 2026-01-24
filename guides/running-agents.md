@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Running Agents
-parent: Guides
+parent: Platform Guides
 nav_order: 4
 ---
 # Running Agents Guide

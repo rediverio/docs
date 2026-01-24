@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Agent Configuration
-parent: Guides
+parent: Platform Guides
 nav_order: 14
 ---
 # Agent Configuration Guide

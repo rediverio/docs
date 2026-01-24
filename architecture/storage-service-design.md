@@ -1,3 +1,10 @@
+---
+layout: default
+title: Storage Service Design
+parent: Architecture
+nav_order: 25
+---
+
 # Storage Service - Technical Design Document
 
 > **Status**: Draft

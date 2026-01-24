@@ -1,3 +1,11 @@
+---
+layout: default
+title: Auth Troubleshooting
+parent: Authentication
+grand_parent: UI Documentation
+nav_order: 6
+---
+
 # Troubleshooting Guide
 
 Solutions to common Keycloak integration issues.

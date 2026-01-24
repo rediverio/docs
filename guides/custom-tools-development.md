@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Custom Tools Development
-parent: Guides
+parent: Platform Guides
 nav_order: 11
 ---
 

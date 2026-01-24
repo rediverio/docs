@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Group-Based Access Control
-parent: Guides
+parent: Platform Guides
 nav_order: 6
 ---
 

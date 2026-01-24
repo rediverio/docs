@@ -1,3 +1,10 @@
+---
+layout: default
+title: Asset Sub-Modules
+parent: Architecture
+nav_order: 30
+---
+
 # Asset Sub-Modules Implementation Plan
 
 > **Status**: Implemented
