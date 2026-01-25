@@ -7,9 +7,9 @@ nav_order: 99
 # Platform Admin System - Complete Implementation Plan
 
 **Date:** 2026-01-25
-**Status:** Planning
-**Version:** 2.0
-**Last Updated:** 2026-01-25
+**Status:** In Progress
+**Version:** 2.3
+**Last Updated:** 2026-01-25 (Phase 0, 1, 2 completed + migration fixes)
 
 ---
 
@@ -1910,41 +1910,90 @@ CREATE INDEX idx_agent_leases_expiry
 
 ## 8. Implementation Phases
 
-### Phase 0: Database & Foundation (Week 1)
+### Phase 0: Database & Foundation (Week 1) ✅ COMPLETED
 
 | # | Task | Priority | Status |
 |---|------|----------|--------|
 | 0.1 | Create migration 000082 (admin_users, audit_logs) | P0 | ✅ Done |
 | 0.2 | Create migration 000083 (agent_leases) | P0 | ✅ Done |
-| 0.3 | Create AdminUser domain entity | P0 | [ ] |
-| 0.4 | Create AdminUserRepository | P0 | [ ] |
-| 0.5 | Create admin auth middleware | P0 | [ ] |
-| 0.6 | Create audit logging middleware | P0 | [ ] |
-| 0.7 | Create Lease domain entity | P0 | [ ] |
-| 0.8 | Create LeaseRepository | P0 | [ ] |
+| 0.3 | Create AdminUser domain entity | P0 | ✅ Done |
+| 0.4 | Create AdminUserRepository | P0 | ✅ Done |
+| 0.5 | Create admin auth middleware | P0 | ✅ Done |
+| 0.6 | Create audit logging middleware | P0 | ✅ Done |
+| 0.7 | Create Lease domain entity | P0 | ✅ Done |
+| 0.8 | Create LeaseRepository | P0 | ✅ Done |
 
-### Phase 1: Controller Workers (Week 2)
+**Phase 0 Implementation Notes:**
+- AdminUser entity: `api/internal/domain/admin/entity.go` - Uses private fields with getters for security
+- AdminUser repository: `api/internal/infra/postgres/admin_repository.go` - Includes 2-step API key auth (prefix lookup + hash verify)
+- Audit logs: `api/internal/domain/admin/audit.go` - Immutable append-only logs with sensitive field redaction
+- Admin auth middleware: `api/internal/infra/http/middleware/admin_auth.go` - API key auth with role/permission checks
+- **Security hardened IP extraction**: Uses RemoteAddr (TCP-level) by default, optional trusted proxy support with CIDR validation
+- Audit middleware: `api/internal/infra/http/middleware/admin_audit.go` - Async audit logging with response capture
+- Lease entity: `api/internal/domain/lease/entity.go` - K8s-style agent health tracking with resource version
+- Lease repository: `api/internal/infra/postgres/lease_repository.go` - Uses database functions for atomic operations
 
-| # | Task | Priority | Status |
-|---|------|----------|--------|
-| 1.1 | Create Controller interface & manager | P0 | [ ] |
-| 1.2 | Implement AgentHealthController | P0 | [ ] |
-| 1.3 | Implement JobRecoveryController | P0 | [ ] |
-| 1.4 | Implement QueuePriorityController | P1 | [ ] |
-| 1.5 | Implement TokenCleanupController | P2 | [ ] |
-| 1.6 | Implement AuditRetentionController | P2 | [ ] |
-| 1.7 | Add controller Prometheus metrics | P1 | [ ] |
-
-### Phase 2: Agent Communication & Lease (Week 3)
+### Phase 1: Controller Workers (Week 2) ✅ COMPLETED
 
 | # | Task | Priority | Status |
 |---|------|----------|--------|
-| 2.1 | Create Lease service | P0 | [ ] |
-| 2.2 | Implement PUT /platform/lease endpoint | P0 | [ ] |
-| 2.3 | Implement POST /platform/poll long-poll endpoint | P0 | [ ] |
-| 2.4 | Implement POST /platform/register endpoint | P0 | [ ] |
-| 2.5 | Add Redis pub/sub for job notification | P1 | [ ] |
-| 2.6 | Create platform agent authentication middleware | P0 | [ ] |
+| 1.1 | Create Controller interface & manager | P0 | ✅ Done |
+| 1.2 | Implement AgentHealthController | P0 | ✅ Done |
+| 1.3 | Implement JobRecoveryController | P0 | ✅ Done |
+| 1.4 | Implement QueuePriorityController | P1 | ✅ Done |
+| 1.5 | Implement TokenCleanupController | P2 | ✅ Done |
+| 1.6 | Implement AuditRetentionController | P2 | ✅ Done |
+| 1.7 | Add controller Prometheus metrics | P1 | ✅ Done |
+
+**Phase 1 Implementation Notes:**
+- Created `api/internal/infra/controller/` package with K8s-style reconciliation loop controllers
+- Controller interface with Name(), Interval(), Reconcile() methods
+- Manager runs multiple controllers in parallel goroutines with graceful shutdown
+- **AgentHealthController**: Marks stale agents as offline using MarkStaleAsOffline, finds expired leases
+- **JobRecoveryController**: Recovers stuck jobs, expires old platform jobs, expires old commands
+- **QueuePriorityController**: Recalculates queue priorities for fair scheduling across tenants
+- **TokenCleanupController**: Cleans up expired bootstrap tokens with configurable retention
+- **AuditRetentionController**: Deletes old audit logs based on retention policy (default 365 days)
+- PrometheusMetrics for controller observability (reconcile count, errors, duration, items processed)
+- Added `NewNop()` to logger package for no-op logging in tests
+- Added `DeleteOlderThan()` and `CountOlderThan()` to AuditLogRepository interface
+
+### Phase 2: Agent Communication & Lease (Week 3) - COMPLETED
+
+| # | Task | Priority | Status |
+|---|------|----------|--------|
+| 2.1 | Create Lease service | P0 | ✅ Done |
+| 2.2 | Implement PUT /platform/lease endpoint | P0 | ✅ Done |
+| 2.3 | Implement POST /platform/poll long-poll endpoint | P0 | ✅ Done |
+| 2.4 | Implement POST /platform/register endpoint | P0 | ✅ Done |
+| 2.5 | Add Redis pub/sub for job notification | P1 | [ ] Deferred |
+| 2.6 | Create platform agent authentication middleware | P0 | ✅ Done |
+
+**Phase 2 Implementation Notes:**
+- Created `api/internal/app/lease_service.go` - LeaseService for K8s-style lease management
+- Created `api/internal/infra/http/middleware/platform_auth.go` - PlatformAgentAuth middleware
+  - Authenticates using X-Agent-ID header and Bearer token
+  - Verifies agent is a platform agent and is active
+  - Uses constant-time comparison to prevent timing attacks
+- Created `api/internal/infra/http/handler/platform_handler.go` - PlatformHandler
+  - PUT /api/v1/platform/lease - Renew agent lease (heartbeat with metrics)
+  - DELETE /api/v1/platform/lease - Release lease (graceful shutdown)
+  - POST /api/v1/platform/poll - Long-poll for jobs
+  - POST /api/v1/platform/jobs/{jobID}/ack - Acknowledge job receipt
+  - POST /api/v1/platform/jobs/{jobID}/result - Report job result
+  - POST /api/v1/platform/jobs/{jobID}/progress - Report job progress
+- Created `api/internal/infra/http/handler/platform_register_handler.go`
+  - POST /api/v1/platform/register - Agent self-registration with bootstrap token
+- Wired up routes in `api/internal/infra/http/routes/platform.go`
+- Task 2.5 (Redis pub/sub) deferred as long-poll is sufficient for initial implementation
+
+**Phase 2.5: Migration Fixes** - Completed 2026-01-25
+- Fixed migration 000083: View column reference `a.agent_type` → `a.type as agent_type` in `platform_agent_status` view
+- Created migration 000084: Fixed `recover_stuck_platform_jobs` function (removed invalid `updated_at` column reference)
+- Fixed `bootstrap_token_repository.go`: Table names `bootstrap_tokens` → `platform_agent_bootstrap_tokens`, `agent_registrations` → `platform_agent_registrations`
+- Fixed `command_repository.go`: `RecoverStuckJobs` function call (2 args → 1 arg to match DB function)
+- Updated `docs/architecture/database-notes.md`: Added comprehensive PostgreSQL Functions documentation section
+- Updated `docs/development/migrations.md`: Added PostgreSQL Functions Convention section with best practices
 
 ### Phase 3: Agent Selection & Scan Integration (Week 4)
 
@@ -1958,18 +2007,29 @@ CREATE INDEX idx_agent_leases_expiry
 | 3.6 | Update CommandService for platform jobs | P0 | [ ] |
 | 3.7 | Add job auth token generation | P0 | [ ] |
 
-### Phase 4: SDK/Agent Updates (Week 5)
+### Phase 4: SDK/Agent Updates (Week 5) - PARTIALLY COMPLETE
 
 | # | Task | Priority | Status |
 |---|------|----------|--------|
-| 4.1 | Create `sdk/pkg/platform/` package | P0 | [ ] |
-| 4.2 | Implement LeaseManager | P0 | [ ] |
-| 4.3 | Implement Bootstrapper | P0 | [ ] |
-| 4.4 | Implement PlatformJobPoller (long-poll) | P0 | [ ] |
-| 4.5 | Update Client with platform endpoints | P0 | [ ] |
+| 4.1 | Create `sdk/pkg/platform/` package | P0 | ✅ Done |
+| 4.2 | Implement LeaseManager | P0 | ✅ Done |
+| 4.3 | Implement Bootstrapper | P0 | ✅ Done |
+| 4.4 | Implement PlatformJobPoller (long-poll) | P0 | ✅ Done |
+| 4.5 | Update Client with platform endpoints | P0 | ✅ Done |
 | 4.6 | Add --platform flag to agent binary | P0 | [ ] |
-| 4.7 | Implement graceful shutdown with lease release | P1 | [ ] |
+| 4.7 | Implement graceful shutdown with lease release | P1 | ✅ Done |
 | 4.8 | Update agent Dockerfile for platform mode | P1 | [ ] |
+
+**Phase 4 Implementation Notes:**
+- Created `sdk/pkg/platform/` package with:
+  - `platform.go` - Core types (AgentCredentials, JobInfo, LeaseInfo, SystemMetrics)
+  - `lease.go` - LeaseManager with K8s-style lease renewal and HTTP client
+  - `bootstrap.go` - Bootstrapper for agent registration with bootstrap tokens
+  - `poller.go` - JobPoller with long-poll support for job fetching
+  - `client.go` - PlatformClient combining all functionality + AgentBuilder pattern
+- LeaseManager supports: periodic renewal, metrics reporting, graceful release
+- Bootstrapper supports: EnsureRegistered helper for credential persistence
+- JobPoller supports: concurrent job execution, progress reporting, callbacks
 
 ### Phase 5: Admin CLI (Week 6-7)
 
@@ -2060,15 +2120,15 @@ CREATE INDEX idx_agent_leases_expiry
 | | Platform agents don't access tenant data | ✅ Done |
 | | Tenant limits enforced | ✅ Done |
 | **Authentication** | JWT for tenant users | ✅ Done |
-| | API keys for admins (individual) | ✅ Planned |
+| | API keys for admins (individual) | ✅ Done |
 | | Bootstrap tokens (time-limited) | ✅ Done |
-| | Lease-based agent auth | 📋 Planned |
-| **Authorization** | RBAC for admins | ✅ Planned |
+| | Lease-based agent auth | ✅ Done |
+| **Authorization** | RBAC for admins | ✅ Done |
 | | Permission checks on every request | ✅ Done |
 | | Tenant scoping on all queries | ✅ Done |
-| **Audit** | All admin actions logged | ✅ Planned |
-| | Immutable audit logs | ✅ Planned |
-| | Retention policy | ✅ Planned |
+| **Audit** | All admin actions logged | ✅ Done |
+| | Immutable audit logs | ✅ Done |
+| | Retention policy | 📋 Planned |
 | **Encryption** | TLS in transit | ✅ Done |
 | | Secrets hashed (bcrypt/SHA-256) | ✅ Done |
 | | Sensitive data masked in logs | ✅ Done |
@@ -2080,9 +2140,9 @@ CREATE INDEX idx_agent_leases_expiry
 
 | Category | Requirement | Status |
 |----------|-------------|--------|
-| **Self-healing** | Controller reconciliation loops | 📋 Planned |
-| | Automatic job recovery | 📋 Planned |
-| | Lease-based failure detection | 📋 Planned |
+| **Self-healing** | Controller reconciliation loops | ✅ Done |
+| | Automatic job recovery | ✅ Done |
+| | Lease-based failure detection | ✅ Done |
 | **Graceful degradation** | Queue backpressure | ✅ Done |
 | | Rate limiting | ✅ Done |
 | | Circuit breakers | 📋 TODO |
@@ -2094,8 +2154,8 @@ CREATE INDEX idx_agent_leases_expiry
 
 | Category | Requirement | Status |
 |----------|-------------|--------|
-| **Metrics** | Prometheus metrics | 📋 Planned |
-| | Agent health metrics | 📋 Planned |
+| **Metrics** | Prometheus metrics | ✅ Done (controllers) |
+| | Agent health metrics | ✅ Done (controllers) |
 | | Queue depth metrics | 📋 Planned |
 | | Latency histograms | 📋 Planned |
 | **Logging** | Structured logging (JSON) | ✅ Done |

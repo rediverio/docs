@@ -58,6 +58,16 @@ Rediver needs to support:
   - Added authentication middleware (RequirePlatformAdmin, API key auth)
   - All routes registered in `routes/routes.go`
 
+- [x] **Phase 7.5: Migration Fixes** - Completed 2026-01-25
+  - Fixed migration 000083 view column reference (`a.agent_type` → `a.type as agent_type`)
+  - Created migration 000084 to fix `recover_stuck_platform_jobs` function (removed `updated_at` reference)
+  - Fixed table name references in `bootstrap_token_repository.go`:
+    - `bootstrap_tokens` → `platform_agent_bootstrap_tokens`
+    - `agent_registrations` → `platform_agent_registrations`
+  - Fixed `RecoverStuckJobs` function signature in `command_repository.go` (2 args → 1 arg)
+  - Documented PostgreSQL functions in `docs/architecture/database-notes.md`
+  - Added DB function conventions to `docs/development/migrations.md`
+
 - [ ] **Phase 8: Integration Testing** - Pending
   - Unit tests for services
   - Integration tests for handlers
@@ -70,15 +80,40 @@ Rediver needs to support:
 - `api/migrations/000080_add_platform_agents.down.sql`
 - `api/migrations/000081_add_bootstrap_tokens.up.sql`
 - `api/migrations/000081_add_bootstrap_tokens.down.sql`
+- `api/migrations/000082_admin_users.up.sql`
+- `api/migrations/000082_admin_users.down.sql`
+- `api/migrations/000083_agent_leases.up.sql`
+- `api/migrations/000083_agent_leases.down.sql`
+- `api/migrations/000084_fix_recover_stuck_jobs.up.sql`
+- `api/migrations/000084_fix_recover_stuck_jobs.down.sql`
 - `api/internal/domain/agent/bootstrap_token.go`
+- `api/internal/domain/admin/entity.go` - AdminUser domain entity
+- `api/internal/domain/admin/audit.go` - Audit log entity
+- `api/internal/domain/lease/entity.go` - Lease entity for K8s-style health
 - `api/internal/infra/postgres/bootstrap_token_repository.go`
+- `api/internal/infra/postgres/admin_repository.go`
+- `api/internal/infra/postgres/lease_repository.go`
 - `api/internal/infra/redis/agent_state.go`
 - `api/internal/app/platform_agent_service.go`
 - `api/internal/app/platform_job_service.go`
+- `api/internal/app/lease_service.go` - K8s-style lease management
 - `api/internal/infra/http/handler/platform_agent_handler.go`
 - `api/internal/infra/http/handler/platform_job_handler.go`
+- `api/internal/infra/http/handler/platform_handler.go` - Lease & poll endpoints
+- `api/internal/infra/http/handler/platform_register_handler.go` - Bootstrap registration
+- `api/internal/infra/http/middleware/platform_auth.go` - Platform agent auth
+- `api/internal/infra/http/middleware/admin_auth.go` - Admin API key auth
+- `api/internal/infra/http/middleware/admin_audit.go` - Audit logging
 - `api/internal/infra/jobs/platform_queue_worker.go`
 - `api/internal/infra/jobs/platform_agent_health_checker.go`
+- `api/internal/infra/controller/` - K8s-style controller package:
+  - `controller.go` - Controller interface & Manager
+  - `agent_health_controller.go` - AgentHealthController
+  - `job_recovery_controller.go` - JobRecoveryController
+  - `queue_priority_controller.go` - QueuePriorityController
+  - `token_cleanup_controller.go` - TokenCleanupController
+  - `audit_retention_controller.go` - AuditRetentionController
+  - `metrics.go` - Prometheus metrics for controllers
 - `api/internal/infra/http/routes/` - New routes subfolder with:
   - `routes.go` - Main entry point, Handlers struct, Register()
   - `admin.go` - Platform admin routes (isolated from tenant routes)
@@ -134,11 +169,12 @@ Rediver needs to support:
 - [x] All files compile without errors (`go build ./...`) - Completed 2026-01-25
 - [ ] Unit tests pass for new services
 - [ ] Integration tests pass for handlers
-- [ ] Database migrations apply cleanly
+- [x] Database migrations apply cleanly - Completed 2026-01-25 (migrated to version 84)
 - [ ] Platform agent registration works with bootstrap token
 - [ ] Job submission and claiming flow works
 - [ ] Queue priority aging works correctly
 - [ ] Stuck job recovery works
+- [x] K8s-style controller reconciliation loop works - Completed 2026-01-25
 - [ ] Agent health monitoring works
 
 ## Notes
