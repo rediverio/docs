@@ -15,6 +15,7 @@ The database schema is organized into logical domains, supporting the clean arch
 
 - **[Schema Overview](./schema.md)**: Detailed breakdown of tables and relationships.
 - **[Migrations](./migrations.md)**: Database version control and migration history.
+- **[Platform Agent Tiers](./platform-agent-tiers.md)**: Tiered platform agent system with SQL functions (v3.3).
 
 ## Connection
 
