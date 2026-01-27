@@ -8,11 +8,11 @@
 
 ## Summary
 
-Rediver đã có backend architecture tốt. Implementation completed:
-1. ✅ Hoàn thiện orchestration (scheduler, cron)
-2. ✅ Thêm Quick Scan và Stats API
-3. ✅ Backend support cho Visual Workflow Builder
-4. ✅ Visual Workflow Builder (UI/Frontend với React Flow)
+Rediver already has good backend architecture. Implementation completed:
+1. ✅ Completed orchestration (scheduler, cron)
+2. ✅ Added Quick Scan and Stats API
+3. ✅ Backend support for Visual Workflow Builder
+4. ✅ Visual Workflow Builder (UI/Frontend with React Flow)
 
 ---
 

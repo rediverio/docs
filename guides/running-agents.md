@@ -573,12 +573,14 @@ rediver-admin create token --max-uses=5 --expires=24h
 #### Step 2: Start the Agent with Bootstrap Token
 
 ```bash
-# Binary
+# Binary - with specific executors enabled
 ./agent -platform \
   -bootstrap-token=abc123.xxxxxxxxxxxxxxxx \
   -api-url=https://api.rediver.io \
   -region=us-east-1 \
-  -capabilities=sast,sca,secrets
+  -enable-recon \
+  -enable-vulnscan \
+  -verbose
 
 # Docker
 docker run -d \
@@ -588,12 +590,29 @@ docker run -d \
   -e API_URL=https://api.rediver.io \
   -v agent-data:/home/rediver/.rediver \
   rediverio/agent:platform
+
+# Hybrid build (uses Go libraries for better performance)
+./agent -platform \
+  -bootstrap-token=abc123.xxxxxxxxxxxxxxxx \
+  -api-url=https://api.rediver.io \
+  -region=us-east-1 \
+  -enable-recon
 ```
 
 The agent will:
 1. Register using the bootstrap token (one-time)
 2. Receive and store a permanent API key
-3. Start polling for jobs
+3. Report capabilities based on enabled executors
+4. Start polling for jobs
+
+**Executor Flags:**
+| Flag | Description |
+|------|-------------|
+| `-enable-recon` | Enable recon executor (subfinder, dnsx, naabu, httpx, katana) |
+| `-enable-vulnscan` | Enable vulnscan executor (nuclei, trivy, semgrep) - default: true |
+| `-enable-secrets` | Enable secrets executor (gitleaks, trufflehog) |
+| `-enable-assets` | Enable assets executor (cloud collection) |
+| `-enable-pipeline` | Enable pipeline executor (workflow orchestration) |
 
 #### Kubernetes Deployment (Helm)
 

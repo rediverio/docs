@@ -9,7 +9,7 @@ nav_order: 12
 
 **Last Updated:** 2026-01-14
 
-Hướng dẫn deploy Rediver Platform lên môi trường Staging.
+Deploy Rediver Platform to a Staging environment.
 
 ---
 
@@ -46,7 +46,7 @@ docker compose version
 
 ```bash
 # Minimum requirements
-- Ubuntu 22.04 LTS (hoặc tương đương)
+- Ubuntu 22.04 LTS (or equivalent)
 - 4 CPU cores
 - 8GB RAM
 - 50GB SSD

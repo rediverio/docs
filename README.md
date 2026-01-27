@@ -114,8 +114,15 @@ Rediver is an enterprise-grade **Continuous Threat Exposure Management (CTEM)** 
 | [Overview](docs/architecture/overview.md) | System design |
 | [Deployment Modes](docs/architecture/deployment-modes.md) | Standalone, distributed |
 | [Server-Agent Communication](docs/architecture/server-agent-command.md) | Command & control |
+| [Agent Key Management](docs/architecture/agent-key-management.md) | API keys, registration tokens |
 | [Scan Pipeline Design](docs/architecture/scan-pipeline-design.md) | Workflow execution |
 | [Notification System](docs/architecture/notification-system.md) | Real-time alerts, async patterns |
+
+### Security
+| Document | Description |
+|----------|-------------|
+| [SDK Security Guide](sdk/docs/SECURITY.md) | SDK security features and best practices |
+| [Agent Configuration](docs/guides/agent-configuration.md) | Secure agent configuration |
 
 ### Reference
 | Document | Description |

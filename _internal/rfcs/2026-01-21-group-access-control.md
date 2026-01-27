@@ -2670,17 +2670,17 @@ LIMIT 1;  -- First match wins
 
 ### 12.3 Implementation Strategy - Best Practice Recommendation
 
-#### Đánh giá các phương án triển khai
+#### Implementation Approach Evaluation
 
-| Phương án | Mô tả | Ưu điểm | Nhược điểm | Risk |
-|-----------|-------|---------|------------|------|
-| **Big Bang** | Build tất cả, deploy một lần | Đơn giản về mặt kỹ thuật | Thời gian dài, rủi ro cao | 🔴 High |
-| **Feature Flags** | Build incremental, rollout từng phần | Kiểm soát được, rollback dễ | Cần quản lý flags | 🟢 Low |
-| **Parallel System** | Chạy song song hệ thống cũ/mới | An toàn nhất | Phức tạp, tốn resources | 🟡 Medium |
+| Approach | Description | Advantages | Disadvantages | Risk |
+|----------|-------------|------------|---------------|------|
+| **Big Bang** | Build all, deploy once | Technically simpler | Long time, high risk | 🔴 High |
+| **Feature Flags** | Build incrementally, gradual rollout | Controllable, easy rollback | Need to manage flags | 🟢 Low |
+| **Parallel System** | Run old/new systems in parallel | Safest | Complex, resource-intensive | 🟡 Medium |
 
-**Khuyến nghị: Feature Flags + Incremental Delivery** ✅
+**Recommendation: Feature Flags + Incremental Delivery** ✅
 
-#### Chiến lược triển khai tối ưu
+#### Optimal Implementation Strategy
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────┐
@@ -2722,7 +2722,7 @@ LIMIT 1;  -- First match wins
 
 #### Phase 0: Foundation (Week 1-2) - START HERE
 
-**Mục tiêu:** Tạo nền tảng vững chắc, không ảnh hưởng users hiện tại
+**Goal:** Create a solid foundation without affecting existing users
 
 **Tasks:**
 
@@ -2777,7 +2777,7 @@ Week 2:
 
 #### Phase 1: Groups (Week 3-4)
 
-**Mục tiêu:** UI quản lý Groups, chỉ visible cho Admins
+**Goal:** Groups management UI, only visible to Admins
 
 **Feature Flag:**
 ```typescript
@@ -2825,7 +2825,7 @@ Week 4:
 
 #### Phase 2: Permission Sets (Week 5-6)
 
-**Mục tiêu:** Quản lý Permission Sets, gán cho Groups
+**Goal:** Permission Sets management, assign to Groups
 
 **Tasks:**
 ```
@@ -2865,7 +2865,7 @@ Week 6:
 
 #### Phase 3: Switchover (Week 7-8) ⚠️ CRITICAL
 
-**Mục tiêu:** Migrate users, activate new RBAC
+**Goal:** Migrate users, activate new RBAC
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────┐
@@ -3018,7 +3018,7 @@ ON CONFLICT (group_id, permission_set_id) DO NOTHING;
 
 #### Phase 4 & 5: After Stable
 
-Chỉ implement sau khi Phase 3 stable ít nhất 2 tuần:
+Only implement after Phase 3 is stable for at least 2 weeks:
 - Phase 4: Asset Ownership, Auto-Assignment
 - Phase 5: External Integrations (GitHub, GitLab, Azure AD)
 

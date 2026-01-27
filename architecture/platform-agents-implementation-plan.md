@@ -43,10 +43,10 @@ nav_order: 3
 
 ### 1.1 Problem Statement
 
-Rediver hiện tại chỉ hỗ trợ **Tenant Agents** - agents do tenant tự deploy và quản lý. Điều này tạo ra barrier cho:
-- **Free/Small tenants**: Không có infrastructure để deploy agents
-- **Quick evaluation**: Muốn thử platform mà không cần setup
-- **Managed service**: Một số tenant muốn Rediver quản lý hoàn toàn
+Rediver currently only supports **Tenant Agents** - agents deployed and managed by tenants themselves. This creates barriers for:
+- **Free/Small tenants**: No infrastructure to deploy agents
+- **Quick evaluation**: Want to try the platform without setup
+- **Managed service**: Some tenants want Rediver to fully manage
 
 ### 1.2 Solution: Hybrid Agent Model with Auto-allocation
 
@@ -66,8 +66,8 @@ Rediver hiện tại chỉ hỗ trợ **Tenant Agents** - agents do tenant tự 
 │  │ • Tenant selects     │      │ • Platform selects   │            │
 │  └──────────────────────┘      └──────────────────────┘            │
 │                                                                      │
-│  KEY DIFFERENCE: Tenant KHÔNG chọn platform agent cụ thể.           │
-│  Platform tự động phân bổ agent phù hợp nhất dựa trên:              │
+│  KEY DIFFERENCE: Tenant does NOT select specific platform agent.    │
+│  Platform automatically allocates the best agent based on:          │
 │  - Capabilities matching                                             │
 │  - Load balancing (least loaded agent)                               │
 │  - Regional preference                                               │
@@ -82,22 +82,22 @@ Rediver hiện tại chỉ hỗ trợ **Tenant Agents** - agents do tenant tự 
 │                    AUTO-ALLOCATION FLOW                              │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                      │
-│  Tenant tạo Scan                                                     │
+│  Tenant creates Scan                                                 │
 │       │                                                              │
 │       ▼                                                              │
 │  ┌─────────────────────────────────────────────────────────────┐    │
-│  │ 1. Check: tenant có platform_agent_access?                   │    │
-│  │ 2. Check: tenant còn concurrent job slot?                    │    │
-│  │ 3. Find: platform agent với matching capabilities            │    │
-│  │ 4. Select: agent có load thấp nhất                          │    │
+│  │ 1. Check: tenant has platform_agent_access?                  │    │
+│  │ 2. Check: tenant has concurrent job slots?                   │    │
+│  │ 3. Find: platform agent with matching capabilities           │    │
+│  │ 4. Select: agent with lowest load                            │    │
 │  └─────────────────────────────────────────────────────────────┘    │
 │       │                                                              │
 │       ▼                                                              │
-│  Platform Agent được auto-assign                                     │
+│  Platform Agent is auto-assigned                                     │
 │       │                                                              │
 │       ▼                                                              │
-│  Tenant UI chỉ thấy: "Running on Platform Agent"                    │
-│  (Không thấy agent ID cụ thể)                                        │
+│  Tenant UI only shows: "Running on Platform Agent"                   │
+│  (Does not show specific agent ID)                                   │
 │                                                                      │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -110,9 +110,9 @@ Rediver hiện tại chỉ hỗ trợ **Tenant Agents** - agents do tenant tự 
 | **Managed option** | Enterprise can offload agent management |
 | **Scalability** | Platform agents scale with demand |
 | **Cost efficiency** | Shared infrastructure reduces costs |
-| **Simple UX** | Tenant không cần quản lý platform agents |
-| **Load balancing** | Platform tự động cân bằng tải |
-| **Flexibility** | Platform có thể scale/replace agents transparent |
+| **Simple UX** | Tenant doesn't need to manage platform agents |
+| **Load balancing** | Platform automatically balances load |
+| **Flexibility** | Platform can scale/replace agents transparently |
 
 ---
 
@@ -174,8 +174,8 @@ Rediver hiện tại chỉ hỗ trợ **Tenant Agents** - agents do tenant tự 
 | **Scaling** | Customer scales | Rediver scales |
 | **Cost** | Customer bears | Included in plan |
 | **SLA** | N/A | Platform SLA |
-| **Selection** | Tenant chọn agent cụ thể | **Platform auto-selects** |
-| **Visibility** | Tenant thấy chi tiết | Tenant chỉ thấy aggregate status |
+| **Selection** | Tenant selects specific agent | **Platform auto-selects** |
+| **Visibility** | Tenant sees details | Tenant only sees aggregate status |
 | **Limit type** | `max_tenant_agents` (count) | `max_concurrent_platform_jobs` (concurrent) |
 
 ### 2.3 Data Flow: Platform Agent Scan
@@ -942,7 +942,7 @@ GetByAuthTokenHash(ctx context.Context, hash string) (*Command, error)
 CountActivePlatformJobsByTenant(ctx context.Context, tenantID shared.ID) (int, error)
 ```
 
-> **Note**: Không còn `TenantPlatformAgentRepository` vì Auto-allocation model không cần assignment table.
+> **Note**: No longer need `TenantPlatformAgentRepository` as Auto-allocation model doesn't require assignment table.
 
 ---
 
@@ -983,8 +983,8 @@ CountActivePlatformJobsByTenant(ctx context.Context, tenantID shared.ID) (int, e
 │  GET    /api/v1/platform-agents/status    Get aggregate platform status     │
 │                                           (online count, capacity, etc.)    │
 │                                                                              │
-│  Note: Tenant KHÔNG thấy danh sách chi tiết các platform agents.            │
-│        Chỉ thấy aggregate status để biết platform agents có available.      │
+│  Note: Tenant does NOT see detailed list of platform agents.                │
+│        Only sees aggregate status to know if platform agents are available. │
 │                                                                              │
 │  PLATFORM AGENT OPERATIONS (new - for platform agents)                      │
 │  ──────────────────────────────────────────────────────                      │
@@ -1015,7 +1015,7 @@ Permission: scans:read
 Response 200:
 {
   "data": {
-    // Aggregate status - tenant KHÔNG thấy agent IDs cụ thể
+    // Aggregate status - tenant does NOT see specific agent IDs
     "total_agents": 10,
     "online_agents": 8,
     "total_capacity": 100,      // Total concurrent job slots
@@ -3181,7 +3181,7 @@ rediver-admin version 1.0.0 (commit: abc123, built: 2024-01-25)
 
 ### 13.1 Agents Page - Simplified View
 
-**Key difference**: Tenant chỉ thấy **aggregate status** của platform agents, không thấy danh sách chi tiết.
+**Key difference**: Tenant only sees **aggregate status** of platform agents, not the detailed list.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -3681,11 +3681,11 @@ curl /admin/api/v1/platform-agents/stats
 | **Auto-allocation (v3.0)** | Simple UX, better utilization, transparent scaling | Less control for tenant | ✅ Chosen |
 
 **Rationale**:
-1. **Simpler UX**: Tenant không cần biết về từng platform agent cụ thể
-2. **Better resource utilization**: Platform có thể distribute jobs evenly
-3. **Transparent scaling**: Platform có thể add/remove agents mà không ảnh hưởng tenant
+1. **Simpler UX**: Tenant doesn't need to know about specific platform agents
+2. **Better resource utilization**: Platform can distribute jobs evenly
+3. **Transparent scaling**: Platform can add/remove agents without affecting tenant
 4. **Load balancing**: Automatic load balancing prevents hotspots
-5. **Regional optimization**: Platform có thể chọn agent gần nhất với target
+5. **Regional optimization**: Platform can select the agent closest to the target
 
 **What Tenant Sees:**
 - Aggregate status: "8/10 agents online, 45% load"

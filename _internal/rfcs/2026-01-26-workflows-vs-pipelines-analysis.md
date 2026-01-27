@@ -9,19 +9,19 @@
 
 ## Executive Summary
 
-Sau khi phân tích chi tiết codebase, kết luận: **Workflows và Pipelines là 2 hệ thống KHÁC NHAU** phục vụ mục đích riêng biệt. Cần giữ riêng và kết nối với nhau.
+After detailed codebase analysis, conclusion: **Workflows and Pipelines are 2 DIFFERENT systems** serving distinct purposes. They should be kept separate and connected to each other.
 
 ---
 
-## 1. Phân tích chi tiết
+## 1. Detailed Analysis
 
-### 1.1 Pipelines (Backend - Đã implement)
+### 1.1 Pipelines (Backend - Implemented)
 
-**Mục đích:** Scan execution orchestration - Điều phối việc chạy các scanner tools
+**Purpose:** Scan execution orchestration - Coordinating the execution of scanner tools
 
 **Location:**
 - Backend: `api/internal/domain/pipeline/`, `api/internal/app/pipeline_service.go`
-- Frontend: `ui/src/app/(dashboard)/(mobilization)/pipelines/` (mới tạo)
+- Frontend: `ui/src/app/(dashboard)/(mobilization)/pipelines/` (newly created)
 
 **Entities:**
 ```
@@ -44,20 +44,20 @@ PipelineStep
 PipelineRun → StepRun → Command → Agent execution
 ```
 
-**Tích hợp:**
+**Integration:**
 - Agent system (command queue, polling)
 - Findings collection
 - Scan configs (Scan.PipelineID)
 
-### 1.2 Workflows (Frontend Mock - Chưa có backend)
+### 1.2 Workflows (Frontend Mock - No backend yet)
 
-**Mục đích:** General automation orchestration - Tự động hóa các security operations
+**Purpose:** General automation orchestration - Automating security operations
 
 **Location:**
 - Frontend: `ui/src/app/(dashboard)/(mobilization)/workflows/page.tsx`
-- Backend: ❌ Chưa có
+- Backend: ❌ Not yet implemented
 
-**Node Types (từ mock data):**
+**Node Types (from mock data):**
 ```
 Trigger (Green)
 ├── New Critical Finding
@@ -82,23 +82,23 @@ Notification (Purple)
 └── Slack Notification
 ```
 
-### 1.3 So sánh
+### 1.3 Comparison
 
 | Aspect | Workflows | Pipelines |
 |--------|-----------|-----------|
 | **Layer** | Frontend only (mock) | Backend (fully implemented) |
 | **Purpose** | General automation | Scan execution |
 | **Actions** | External (Slack, Jira, assign) | Internal (scanner tools) |
-| **Agent** | Không có | Tích hợp sâu |
+| **Agent** | None | Deep integration |
 | **Findings** | Trigger source | Output collection |
-| **Database** | ❌ Chưa có | ✅ Có đầy đủ |
-| **API** | ❌ Chưa có | ✅ Có đầy đủ |
+| **Database** | ❌ Not yet | ✅ Complete |
+| **API** | ❌ Not yet | ✅ Complete |
 
 ---
 
-## 2. Quyết định kiến trúc
+## 2. Architecture Decision
 
-### Giữ riêng biệt + Kết nối
+### Keep Separate + Connect
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -142,21 +142,21 @@ Notification (Purple)
 
 ### Phase 2: Rename for Clarity ✅ DONE
 
-**Mục tiêu:** Phân biệt rõ ràng giữa Scan Pipelines và Automation Workflows
+**Goal:** Clearly distinguish between Scan Pipelines and Automation Workflows
 
 ```
-/workflows              → Giữ nguyên (Automation Workflows)
-/pipelines              → Giữ nguyên, page title = "Scan Pipelines"
+/workflows              → Keep as-is (Automation Workflows)
+/pipelines              → Keep as-is, page title = "Scan Pipelines"
 ```
 
 **Files updated:**
-- [x] Rename page title: "Scan Pipelines" thay vì "Pipelines" (already done in page.tsx)
+- [x] Rename page title: "Scan Pipelines" instead of "Pipelines" (already done in page.tsx)
 - [x] Update navigation menu (added to sidebar-data.ts with GitMerge icon)
 - [ ] Update docs (optional, can be done later)
 
 ### Phase 3: Build Workflows Backend ✅ COMPLETED
 
-**Mục tiêu:** Tạo backend cho Automation Workflows
+**Goal:** Create backend for Automation Workflows
 
 **Implemented Files:**
 ```
@@ -255,7 +255,7 @@ CREATE TABLE workflow_node_runs (
 
 ### Phase 4: Workflow-Pipeline Integration ✅ COMPLETED
 
-**Mục tiêu:** Cho phép Workflow trigger Pipeline
+**Goal:** Allow Workflow to trigger Pipeline
 
 **Implemented in `api/internal/app/workflow_action_handlers.go`:**
 
@@ -295,7 +295,7 @@ func (e *WorkflowExecutor) executeAction(ctx context.Context, run *workflow.Work
 
 ### Phase 5: Connect Workflows Frontend ✅ COMPLETED
 
-**Mục tiêu:** Kết nối frontend với backend API
+**Goal:** Connect frontend with backend API
 
 - [x] Replace mock data with API calls (`useWorkflows`, `useWorkflowRuns` hooks)
 - [x] Add CRUD operations for workflows
@@ -332,21 +332,21 @@ func (e *WorkflowExecutor) executeAction(ctx context.Context, run *workflow.Work
 
 ---
 
-## 5. Lưu ý quan trọng
+## 5. Important Notes
 
-1. **Không xóa code đã làm** - Pipeline backend và frontend đều hoạt động tốt
-2. **Reuse WorkflowBuilder** - Component này có thể dùng cho cả 2 (pipelines và workflows)
+1. **Don't delete existing code** - Pipeline backend and frontend are working well
+2. **Reuse WorkflowBuilder** - This component can be used for both (pipelines and workflows)
 3. **Naming convention:**
-   - Pipelines = Scan execution (chạy scanner)
+   - Pipelines = Scan execution (running scanners)
    - Workflows = Automation (notify, assign, ticket)
-4. **Integration point:** Workflows có thể trigger Pipelines thông qua action type "trigger_pipeline"
+4. **Integration point:** Workflows can trigger Pipelines via action type "trigger_pipeline"
 
 ---
 
 ## 6. Next Steps (Priority Order)
 
-1. ✅ ~~Hoàn thành Pipeline frontend~~ (DONE)
-2. ✅ ~~Rename/clarify page titles để phân biệt~~ (DONE - page.tsx has "Scan Pipelines")
+1. ✅ ~~Complete Pipeline frontend~~ (DONE)
+2. ✅ ~~Rename/clarify page titles for distinction~~ (DONE - page.tsx has "Scan Pipelines")
 3. ✅ ~~Update navigation menu~~ (DONE - sidebar-data.ts updated with GitMerge icon)
 4. ✅ ~~Build Workflows backend~~ (DONE - with 14 security controls)
 5. ✅ ~~Add trigger_pipeline action type~~ (DONE - 7 action types implemented)

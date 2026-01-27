@@ -9,13 +9,13 @@
 
 ## Executive Summary
 
-Chuyển đổi từ hệ thống access control hiện tại (roles hardcoded + complex groups/permission sets) sang **Unified Architecture**:
+Transition from the current access control system (hardcoded roles + complex groups/permission sets) to **Unified Architecture**:
 
-1. **Roles trong Database** - thay vì hardcoded trong code
-2. **Permissions trong Database** - sử dụng bảng `modules` + `permissions` có sẵn
-3. **Multiple Roles per User** - user có thể có nhiều roles, permissions = UNION
-4. **Groups chỉ để Data Scoping** - không cần permission sets
-5. **Custom Roles per Tenant** - tenant có thể tạo roles riêng
+1. **Roles in Database** - instead of hardcoded in code
+2. **Permissions in Database** - using existing `modules` + `permissions` tables
+3. **Multiple Roles per User** - user can have multiple roles, permissions = UNION
+4. **Groups for Data Scoping Only** - no need for permission sets
+5. **Custom Roles per Tenant** - tenant can create their own roles
 
 ---
 
@@ -1939,16 +1939,16 @@ func RequirePermission(permission string) gin.HandlerFunc {
 │                    FRONTEND APPROACH                                 │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                      │
-│   1. COPY STRUCTURE từ Groups UI                                    │
-│      └── Giữ nguyên patterns: page layout, detail sheet, tabs      │
+│   1. COPY STRUCTURE from Groups UI                                  │
+│      └── Keep patterns: page layout, detail sheet, tabs            │
 │                                                                      │
 │   2. CREATE SHARED PermissionSelector                               │
-│      └── Component mới có thể dùng cho cả Roles và Groups          │
-│      └── Fetch permissions từ API, không hardcode                   │
+│      └── New component can be used for both Roles and Groups       │
+│      └── Fetch permissions from API, no hardcoding                  │
 │                                                                      │
-│   3. SIMPLIFY cho Roles                                             │
-│      └── Chỉ 2 tabs: Details + Permissions                         │
-│      └── Bỏ Members tab, Assets tab                                 │
+│   3. SIMPLIFY for Roles                                             │
+│      └── Only 2 tabs: Details + Permissions                        │
+│      └── Remove Members tab, Assets tab                             │
 │                                                                      │
 │   4. API HOOKS                                                       │
 │      └── useRoles() - list roles                                    │
@@ -2500,7 +2500,7 @@ export function PermissionSelector({
 }
 ```
 
-### 3.5 Role Detail Sheet (với Members Tab)
+### 3.5 Role Detail Sheet (with Members Tab)
 
 **File:** `ui/src/features/access-control/components/role-detail-sheet.tsx`
 

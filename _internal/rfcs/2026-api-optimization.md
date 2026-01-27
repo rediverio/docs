@@ -8,7 +8,7 @@ nav_order: 1
 
 # API Optimization Plan - Reduce Initial Load Requests
 
-> Tối ưu từ 4+ API calls xuống 1 call sau login
+> Optimize from 4+ API calls to 1 call after login
 
 **Status:** ✅ Completed
 **Priority:** Medium

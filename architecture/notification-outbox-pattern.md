@@ -11,7 +11,7 @@ nav_order: 21
 
 This document describes the implementation of the **Transactional Outbox Pattern** for reliable notification delivery in the Rediver.io platform.
 
-> **Important Note**: Hệ thống này tập trung phát triển cho các tính năng của tenant. Phần admin (system-wide monitoring, cross-tenant management) sẽ được phát triển trong một bộ backend và frontend riêng biệt sau này.
+> **Important Note**: This system focuses on tenant-facing features. Admin features (system-wide monitoring, cross-tenant management) will be developed in a separate backend and frontend later.
 
 ## Table of Contents
 
@@ -566,7 +566,7 @@ myService.SetNotificationService(db.DB, notificationService)
 
 ## Tenant Management
 
-> **Note**: API này được thiết kế cho tenant-facing features. Tenant chỉ có thể xem và quản lý các notification của chính mình (tenant-scoped). Phần admin system-wide sẽ được phát triển sau trong một backend riêng biệt.
+> **Note**: This API is designed for tenant-facing features. Tenants can only view and manage their own notifications (tenant-scoped). System-wide admin features will be developed later in a separate backend.
 
 ### API Endpoints (Tenant-Scoped)
 
@@ -586,7 +586,7 @@ myService.SetNotificationService(db.DB, notificationService)
 | `page` | int | Page number | 1 |
 | `page_size` | int | Items per page (max 100) | 20 |
 
-> **Note**: `tenant_id` parameter không còn cần thiết vì API tự động lọc theo tenant từ JWT token.
+> **Note**: `tenant_id` parameter is no longer required as the API automatically filters by tenant from JWT token.
 
 ### Statistics Response
 
@@ -626,7 +626,7 @@ myService.SetNotificationService(db.DB, notificationService)
 }
 ```
 
-> **Note**: `tenant_id` không được trả về trong response vì tất cả entries đều thuộc về tenant hiện tại.
+> **Note**: `tenant_id` is not returned in the response as all entries belong to the current tenant.
 
 ### Tenant Flow: Retry Failed Entry
 
@@ -685,7 +685,7 @@ myService.SetNotificationService(db.DB, notificationService)
 
 ### Tenant Outbox Features (Proposed)
 
-> **Note**: API backend đã hoàn thành. UI có thể được thêm vào trong `/settings/notifications/outbox` hoặc tương tự.
+> **Note**: API backend is complete. UI can be added at `/settings/notifications/outbox` or similar.
 
 | Feature | Proposed Page | API Endpoint | Status |
 |---------|---------------|--------------|--------|
@@ -696,7 +696,7 @@ myService.SetNotificationService(db.DB, notificationService)
 
 ### Admin Features (Future - Separate Backend)
 
-> **Note**: Phần admin system-wide sẽ được phát triển trong một backend và frontend riêng biệt sau này.
+> **Note**: System-wide admin features will be developed in a separate admin backend and frontend.
 
 | Feature | Description |
 |---------|-------------|
@@ -904,19 +904,19 @@ api/internal/infra/http/handler/
 
 ### E2E Test Script
 
-Một script được cung cấp để test toàn bộ flow notification outbox từ đầu đến cuối.
+A script is provided to test the complete notification outbox flow end-to-end.
 
 **Script location**: `api/scripts/test_notification_outbox_e2e.sh`
 
 #### Prerequisites
 
-- PostgreSQL client (`psql`) đã cài đặt
-- Database đang chạy (có thể dùng Docker Compose)
-- Ít nhất một notification integration đã được cấu hình cho tenant
+- PostgreSQL client (`psql`) installed
+- Database running (can use Docker Compose)
+- At least one notification integration configured for the tenant
 
 #### Docker Compose Database
 
-Nếu bạn sử dụng Docker Compose (file `api/docker-compose.yml`), database mặc định là:
+If you're using Docker Compose (file `api/docker-compose.yml`), the default database is:
 
 ```
 Host:     localhost
@@ -928,37 +928,37 @@ Database: rediver
 DATABASE_URL: postgres://rediver:secret@localhost:5432/rediver
 ```
 
-#### Cách sử dụng
+#### Usage
 
 ```bash
-# Đảm bảo script có quyền thực thi
+# Ensure script has execute permission
 chmod +x api/scripts/test_notification_outbox_e2e.sh
 
-# Cách 1: Truyền DATABASE_URL trực tiếp
+# Option 1: Pass DATABASE_URL directly
 ./api/scripts/test_notification_outbox_e2e.sh <tenant_id> 'postgres://rediver:secret@localhost:5432/rediver'
 
-# Cách 2: Set biến môi trường trước
+# Option 2: Set environment variable first
 export DATABASE_URL='postgres://rediver:secret@localhost:5432/rediver'
 ./api/scripts/test_notification_outbox_e2e.sh <tenant_id>
 ```
 
-#### Lấy Tenant ID
+#### Getting Tenant ID
 
-Nếu bạn chưa biết tenant_id, có thể query database:
+If you don't know the tenant_id, you can query the database:
 
 ```bash
 psql 'postgres://rediver:secret@localhost:5432/rediver' -c "SELECT id, name FROM tenants LIMIT 5;"
 ```
 
-#### Script hoạt động như thế nào
+#### How the Script Works
 
-1. **Kiểm tra integrations**: Xác nhận tenant có notification integrations
-2. **Tạo test notification**: Insert một entry vào `notification_outbox` table
-3. **Đợi scheduler xử lý**: Poll status mỗi 2 giây, tối đa 30 giây
-4. **Kiểm tra kết quả**: Xem status và notification history
-5. **Dọn dẹp**: Xóa test data khỏi database
+1. **Check integrations**: Confirm tenant has notification integrations
+2. **Create test notification**: Insert an entry into `notification_outbox` table
+3. **Wait for scheduler**: Poll status every 2 seconds, max 30 seconds
+4. **Check results**: View status and notification history
+5. **Cleanup**: Delete test data from database
 
-#### Kết quả mong đợi
+#### Expected Output
 
 ```
 ==========================================
@@ -1000,12 +1000,12 @@ Result: SUCCESS - Notification was processed and sent
 
 #### Troubleshooting
 
-| Vấn đề | Nguyên nhân | Giải pháp |
-|--------|-------------|-----------|
-| Status PENDING sau 30s | Scheduler không chạy | Kiểm tra API server đang chạy và scheduler được khởi động |
-| Status FAILED | Integration lỗi | Kiểm tra `last_error` trong outbox entry |
-| History = 0 | Không match filters | Kiểm tra event_type và severity filters trên integrations |
-| No integrations | Chưa cấu hình | Thêm notification integration qua UI hoặc API |
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| Status PENDING after 30s | Scheduler not running | Check API server is running and scheduler is started |
+| Status FAILED | Integration error | Check `last_error` in outbox entry |
+| History = 0 | No matching filters | Check event_type and severity filters on integrations |
+| No integrations | Not configured | Add notification integration via UI or API |
 
 ---
 
@@ -1053,7 +1053,7 @@ Result: SUCCESS - Notification was processed and sent
 
 ### Admin System (Future - Separate Backend)
 
-> **Note**: Phần admin sẽ được phát triển trong một backend riêng biệt sau này.
+> **Note**: Admin features will be developed in a separate backend later.
 
 - [ ] Cross-tenant monitoring
 - [ ] System-wide statistics

@@ -32,12 +32,12 @@ nav_order: 99
 
 ## 1. Executive Summary
 
-### 1.1 Mục tiêu
+### 1.1 Goals
 
-Xây dựng hệ thống **Platform Agents** cho Rediver Security Platform với:
-- **Kiến trúc K8s-inspired**: Control Plane + Worker pattern
-- **Self-healing**: Tự động phục hồi khi có lỗi
-- **Multi-tenant isolation**: Tách biệt hoàn toàn với tenant data
+Build a **Platform Agents** system for Rediver Security Platform with:
+- **K8s-inspired architecture**: Control Plane + Worker pattern
+- **Self-healing**: Automatic recovery on errors
+- **Multi-tenant isolation**: Complete separation from tenant data
 - **Enterprise-grade security**: Audit trail, encryption, compliance
 
 ### 1.2 Key Decisions
@@ -133,7 +133,7 @@ Xây dựng hệ thống **Platform Agents** cho Rediver Security Platform với
 
 ### 2.2 Agent Selection Mechanism
 
-Khi tenant tạo scan job, hệ thống cần quyết định sử dụng Platform Agent hay Tenant Agent.
+When tenant creates a scan job, the system needs to decide whether to use Platform Agent or Tenant Agent.
 
 #### Selection Strategy
 
@@ -431,7 +431,7 @@ func (s *AgentSelector) selectPlatformAgent(ctx context.Context, c SelectionCrit
 
 ### 3.1 Controller Workers (K8s-style Reconciliation)
 
-**Pattern**: Liên tục reconcile actual state → desired state
+**Pattern**: Continuously reconcile actual state → desired state
 
 ```go
 // Controller interface
@@ -880,7 +880,7 @@ Based on analysis of current SDK (`/sdk/`) and Agent (`/agent/`) architecture:
 
 ### 5.0 Docker Deployment Considerations
 
-Khi platform chạy trong Docker, admin CLI cần được thiết kế để hoạt động linh hoạt:
+When platform runs in Docker, admin CLI needs to be designed for flexible operation:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -1223,7 +1223,7 @@ spec:
 
 **Decision: Create Separate `admin-ui` Project**
 
-Để đảm bảo tách biệt hoàn toàn về quyền hạn và giảm độ phức tạp quản lý, Admin UI sẽ là một project riêng.
+To ensure complete separation of permissions and reduce management complexity, Admin UI will be a separate project.
 
 #### Rationale
 

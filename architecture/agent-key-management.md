@@ -433,7 +433,37 @@ rdv_reg_abc123def456ghi789jkl012mno345pqr
 - Hash keys with SHA-256 before storing
 - Store only prefix for identification
 - Never log full API keys
-- Use secure comparison for auth
+- Use secure comparison for auth (constant-time)
+
+### SDK Security Features (v1.1+)
+
+The SDK includes comprehensive security controls for platform agents:
+
+#### Credential Storage
+- **Encrypted storage**: Use `EncryptedFileStore` with AES-256-GCM
+- **Key validation**: Path traversal and injection prevention
+- **Secure clearing**: Zero credentials in memory after use
+- **Constant-time comparison**: Timing attack prevention
+
+#### Job Validation
+- Job ID, tenant ID, type validation
+- Allowed job types whitelist
+- Payload size limits (default 10MB)
+- Auth token validation with JWT claim matching
+- Timeout validation (max 1 hour)
+
+#### Lease Security
+- Cryptographically secure holder identity (16-byte random nonce)
+- Automatic job cancellation on lease expiry
+- Grace period handling
+
+#### Template Security
+- Path traversal prevention in template names
+- Template type whitelist (nuclei, semgrep, gitleaks)
+- Size limits (1MB per template, 50 per command)
+- Content hash verification
+
+See [SDK Security Guide](/sdk/docs/SECURITY.md) for implementation details.
 
 ### Rate Limiting
 - Limit auth attempts per key prefix

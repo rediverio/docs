@@ -7,7 +7,40 @@ nav_order: 12
 
 # Rediver Agent Usage Guide
 
-The Rediver Agent is a command-line security scanning tool that integrates with the Rediver platform.
+The Rediver Agent is a modular security scanning tool that integrates with the Rediver platform. It supports multiple executor types for different security domains.
+
+---
+
+## Architecture Overview
+
+The agent uses a **modular executor architecture**:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      Agent Binary                           │
+├─────────────────────────────────────────────────────────────┤
+│                   Executor Router                           │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐       │
+│  │  Recon   │ │ VulnScan │ │ Secrets  │ │  Assets  │  ...  │
+│  │ Executor │ │ Executor │ │ Executor │ │ Executor │       │
+│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘       │
+│       │            │            │            │              │
+│  ┌────┴────┐  ┌────┴────┐  ┌────┴────┐  ┌────┴────┐        │
+│  │subfinder│  │ nuclei  │  │gitleaks │  │  cloud  │        │
+│  │  dnsx   │  │  trivy  │  │trufflehog│  │  apis  │        │
+│  │ naabu   │  │ semgrep │  └─────────┘  └─────────┘        │
+│  │ httpx   │  └─────────┘                                  │
+│  │ katana  │                                               │
+│  └─────────┘                                               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Executors:**
+- **Recon**: External attack surface discovery (subdomains, DNS, ports, HTTP, crawling)
+- **VulnScan**: Vulnerability scanning (SAST, SCA, DAST, IaC)
+- **Secrets**: Secret and credential detection
+- **Assets**: Cloud asset collection
+- **Pipeline**: Workflow orchestration (coming soon)
 
 ---
 
@@ -24,7 +57,18 @@ go install github.com/rediverio/agent@latest
 ```bash
 git clone https://github.com/rediverio/agent.git
 cd agent
-go build -o agent .
+
+# Standard build (CLI-only tools)
+go build -o agent ./agent/
+
+# Platform mode build (for managed agents)
+go build -tags platform -o agent ./agent/
+
+# Hybrid mode build (library + CLI, reduces process overhead)
+go build -tags hybrid -o agent ./agent/
+
+# Full build (platform + hybrid)
+go build -tags "platform,hybrid" -o agent ./agent/
 ```
 
 ### Option 3: Docker
@@ -76,13 +120,34 @@ export API_KEY=rdw_your_api_key_here
 | `-verbose` | Enable verbose logging | `-verbose` |
 | `-config` | Path to config file | `-config agent.yaml` |
 
+### Executor Options
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-enable-recon` | Enable reconnaissance executor | `false` |
+| `-enable-vulnscan` | Enable vulnerability scan executor | `true` |
+| `-enable-secrets` | Enable secrets detection executor | `false` |
+| `-enable-assets` | Enable asset collection executor | `false` |
+| `-enable-pipeline` | Enable pipeline orchestration | `false` |
+
 ### Execution Modes
 
 | Flag | Description |
 |------|-------------|
 | `-daemon` | Run as continuous daemon |
+| `-platform` | Run as platform-managed agent (requires `-tags platform` build) |
 | `-list-tools` | List available tools |
 | `-check-tools` | Check tool installation status |
+
+### Platform Agent Options (requires `-tags platform` build)
+
+| Flag | Description |
+|------|-------------|
+| `-api-url` | Platform API URL |
+| `-bootstrap-token` | One-time bootstrap token for registration |
+| `-region` | Agent region for job routing |
+| `-max-concurrent` | Maximum concurrent jobs |
+| `-credentials-file` | Path to store agent credentials |
 
 ### CI/CD Options
 
@@ -97,14 +162,33 @@ export API_KEY=rdw_your_api_key_here
 
 ## Available Scanners
 
+### VulnScan Executor (SAST, SCA, DAST, IaC)
+
 | Tool | Type | Description |
 |------|------|-------------|
 | `semgrep` | SAST | Code analysis with dataflow/taint tracking |
-| `gitleaks` | Secret | Secret and credential detection |
 | `trivy` | SCA | Vulnerability scanning (filesystem) |
 | `trivy-config` | IaC | Infrastructure misconfiguration |
 | `trivy-image` | Container | Container image scanning |
 | `trivy-full` | All | vuln + misconfig + secret |
+| `nuclei` | DAST | Dynamic application security testing |
+
+### Secrets Executor
+
+| Tool | Type | Description |
+|------|------|-------------|
+| `gitleaks` | Secret | Secret and credential detection |
+| `trufflehog` | Secret | Git history secret scanning |
+
+### Recon Executor (External Attack Surface)
+
+| Tool | Type | Description |
+|------|------|-------------|
+| `subfinder` | Subdomain | Passive subdomain enumeration |
+| `dnsx` | DNS | DNS resolution and record lookup |
+| `naabu` | Port | Fast port scanning |
+| `httpx` | HTTP | HTTP probing and tech detection |
+| `katana` | Crawler | Web crawling and URL discovery |
 
 ### Software Bill of Materials (SBOM)
 
@@ -466,8 +550,258 @@ Other causes:
 
 ---
 
+---
+
+## Build Modes
+
+The agent supports different build modes for different use cases.
+
+### Standard Build (Default)
+
+```bash
+go build -o agent ./agent/
+```
+
+- CLI-only mode, spawns external processes for each tool
+- No external library dependencies
+- Best for: CI/CD, lightweight deployments
+
+### Hybrid Build
+
+```bash
+go build -tags hybrid -o agent ./agent/
+```
+
+- Uses Go libraries directly when available (subfinder, dnsx, naabu, httpx, katana)
+- Falls back to CLI for tools without library support
+- Lower process overhead, faster execution
+- Best for: High-volume scanning, memory-constrained environments
+
+**Hybrid Configuration:**
+
+```yaml
+recon:
+  use_hybrid_mode: true
+  prefer_library: true    # Use library when available
+  subfinder_use_lib: true
+  dnsx_use_lib: true
+  naabu_use_lib: true
+  httpx_use_lib: true
+  katana_use_lib: true
+```
+
+### Platform Build
+
+```bash
+go build -tags platform -o agent ./agent/
+```
+
+- Enables `-platform` flag for managed agent mode
+- Supports bootstrap token registration
+- Automatic job polling and lease renewal
+- Best for: Platform-managed deployments
+
+### Full Build (Platform + Hybrid)
+
+```bash
+go build -tags "platform,hybrid" -o agent ./agent/
+```
+
+- All features enabled
+- Best for: Enterprise deployments
+
+---
+
+## Platform Agent Mode
+
+Platform mode enables the agent to be managed by the Rediver platform, receiving jobs remotely and reporting results automatically.
+
+### Registration with Bootstrap Token
+
+```bash
+# First-time registration
+./agent -platform \
+  -api-url https://api.rediver.io \
+  -bootstrap-token abc123.xxxxxxxx \
+  -region us-east-1 \
+  -enable-recon \
+  -enable-vulnscan
+
+# Subsequent runs (uses stored credentials)
+./agent -platform \
+  -api-url https://api.rediver.io \
+  -region us-east-1
+```
+
+### Platform Agent Configuration
+
+```yaml
+# platform-agent.yaml
+platform:
+  api_url: https://api.rediver.io
+  credentials_file: ~/.rediver/agent-credentials.json
+  region: us-east-1
+  max_concurrent: 5
+
+executors:
+  recon:
+    enabled: true
+    use_hybrid_mode: true
+  vulnscan:
+    enabled: true
+  secrets:
+    enabled: false
+  assets:
+    enabled: false
+```
+
+### Job Types
+
+The platform can dispatch these job types:
+
+| Job Type | Routed To | Description |
+|----------|-----------|-------------|
+| `recon`, `subdomain`, `dns`, `portscan`, `http`, `crawler` | Recon Executor | External attack surface discovery |
+| `scan`, `vulnscan`, `sast`, `sca`, `dast`, `container`, `iac` | VulnScan Executor | Vulnerability scanning |
+| `secret`, `secrets` | Secrets Executor | Secret detection |
+| `collect`, `assets`, `cloud` | Assets Executor | Asset collection |
+| `pipeline` | Pipeline Executor | Workflow orchestration |
+
+---
+
+## Executor Reference
+
+### Recon Executor
+
+Discovers external attack surface assets.
+
+**Capabilities:** `subdomain`, `dns`, `portscan`, `http`, `tech-detect`, `crawler`, `url-discovery`
+
+**Tools:**
+- **subfinder**: Passive subdomain enumeration using multiple sources
+- **dnsx**: DNS resolution with A, AAAA, CNAME, MX, NS, TXT records
+- **naabu**: Fast SYN/CONNECT port scanning
+- **httpx**: HTTP probing with status codes, titles, tech detection
+- **katana**: Web crawling and JavaScript parsing
+
+**Example Job:**
+
+```json
+{
+  "type": "recon",
+  "payload": {
+    "target": "example.com",
+    "tools": ["subfinder", "dnsx", "httpx"],
+    "options": {
+      "resolve": true,
+      "tech_detect": true
+    }
+  }
+}
+```
+
+### VulnScan Executor
+
+Scans for vulnerabilities across different security domains.
+
+**Capabilities:** `sast`, `sca`, `dast`, `container`, `iac`, `misconfiguration`
+
+**Tools:**
+- **nuclei**: Template-based DAST scanning
+- **trivy**: SCA vulnerability scanning (filesystem, image, config)
+- **semgrep**: SAST with dataflow/taint tracking
+
+**Example Job:**
+
+```json
+{
+  "type": "vulnscan",
+  "payload": {
+    "scanner": "semgrep",
+    "target": "/path/to/project",
+    "options": {
+      "config": ["p/security-audit", "p/owasp-top-ten"],
+      "dataflow_trace": true
+    }
+  }
+}
+```
+
+---
+
+## RIS Output Format
+
+All executors output findings in **RIS (Rediver Interchange Schema)** format:
+
+```json
+{
+  "schema_version": "1.0",
+  "tool": {
+    "name": "semgrep",
+    "version": "1.0.0"
+  },
+  "assets": [
+    {
+      "type": "repository",
+      "value": "github.com/org/repo"
+    }
+  ],
+  "findings": [
+    {
+      "id": "finding-1",
+      "type": "vulnerability",
+      "title": "SQL Injection",
+      "severity": "critical",
+      "rule_id": "CWE-89",
+      "location": {
+        "path": "src/db/query.go",
+        "start_line": 45
+      }
+    }
+  ]
+}
+```
+
+---
+
+## Using SDK Scanners Directly
+
+For custom integrations, you can use the SDK scanners directly instead of the agent binary:
+
+```go
+import (
+    "context"
+    "github.com/rediverio/sdk/pkg/scanners/recon/subfinder"
+    "github.com/rediverio/sdk/pkg/scanners/semgrep"
+    "github.com/rediverio/sdk/pkg/enrichers/epss"
+)
+
+func main() {
+    ctx := context.Background()
+
+    // Recon scanning
+    subScanner := subfinder.NewScanner()
+    result, _ := subScanner.Scan(ctx, "example.com", nil)
+    fmt.Printf("Found %d subdomains\n", len(result.Subdomains))
+
+    // SAST scanning
+    sastScanner := semgrep.NewScanner()
+    findings, _ := sastScanner.ScanToFindings(ctx, "./src", nil)
+
+    // Enrich with threat intelligence
+    enricher := epss.NewEnricher()
+    enriched, _ := enricher.EnrichBatch(ctx, findings)
+}
+```
+
+See the [SDK Development Guide](sdk-development.md) for detailed SDK usage.
+
+---
+
 ## Next Steps
 
 - **[Running Agents](running-agents.md)** - Create agents in Rediver UI
 - **[SDK Quick Start](sdk-quick-start.md)** - Use SDK directly
+- **[SDK Development](sdk-development.md)** - Build custom scanners and collectors
 - **[Custom Tools Development](custom-tools-development.md)** - Build your own tools
+- **[Platform Administration](platform-admin.md)** - Manage platform agents

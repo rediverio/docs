@@ -289,11 +289,45 @@ agent -check-tools
 2. **Use least privilege** - Only enable required scanners
 3. **Secure config files** - Set proper file permissions
 4. **Rotate keys regularly** - Generate new API keys periodically
+5. **Use encrypted credential storage** - For sensitive data at rest
 
 ```bash
 # Secure file permissions
 chmod 600 agent.yaml
 ```
+
+### Platform Agent Security (v1.1+)
+
+For platform-mode agents, additional security features are available:
+
+```yaml
+# Platform agent security configuration
+platform:
+  # Job validation
+  allowed_job_types:
+    - scan
+    - collect
+  max_payload_size: 10485760  # 10MB
+  require_auth_token: true
+  validate_token_claims: true  # Verify JWT tenant_id matches job
+
+  # Lease security (enabled by default)
+  lease:
+    use_secure_identity: true   # Cryptographic nonce in identity
+    identity_prefix: "scanner"  # Agent type prefix
+
+  # Job timeouts
+  default_job_timeout: 5m
+  max_job_timeout: 1h
+```
+
+**Security features:**
+- **Job validation**: Whitelist job types, validate payloads, verify auth tokens
+- **Lease security**: Cryptographic identity prevents hijacking
+- **Lease expiry handling**: Jobs auto-cancel when lease expires
+- **Template security**: Path traversal prevention, size limits, hash verification
+
+See [SDK Security Guide](../../sdk/docs/SECURITY.md) for detailed information.
 
 ---
 
@@ -301,4 +335,6 @@ chmod 600 agent.yaml
 
 - [Docker Deployment Guide](./docker-deployment.md)
 - [SDK Development Guide](./sdk-development.md)
+- [SDK Security Guide](../../sdk/docs/SECURITY.md)
+- [Agent Key Management](../architecture/agent-key-management.md)
 - [CI/CD Examples](https://github.com/rediverio/sdk/tree/main/examples/ci-cd)

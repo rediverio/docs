@@ -1638,6 +1638,197 @@ registry.RegisterSCAScanner(myCustomSCAScanner)
 
 ---
 
+## Recon Scanners (Attack Surface Discovery)
+
+The SDK includes reconnaissance scanners for external attack surface discovery.
+
+### Available Recon Scanners
+
+| Scanner | Type | Description |
+|---------|------|-------------|
+| `subfinder` | Subdomain | Passive subdomain enumeration |
+| `dnsx` | DNS | DNS resolution and record lookup |
+| `naabu` | Port | Fast port scanning |
+| `httpx` | HTTP | HTTP/HTTPS probing and tech detection |
+| `katana` | Crawler | Web crawling and URL discovery |
+
+### Using Recon Scanners
+
+```go
+import (
+    "context"
+    "fmt"
+
+    "github.com/rediverio/sdk/pkg/core"
+    "github.com/rediverio/sdk/pkg/scanners/recon/subfinder"
+    "github.com/rediverio/sdk/pkg/scanners/recon/httpx"
+)
+
+func main() {
+    ctx := context.Background()
+
+    // Subdomain enumeration
+    subScanner := subfinder.NewScanner()
+    subScanner.Threads = 50
+    subScanner.All = true // Use all sources
+
+    result, err := subScanner.Scan(ctx, "example.com", &core.ReconOptions{
+        Threads:   50,
+        RateLimit: 100,
+    })
+    if err != nil {
+        panic(err)
+    }
+
+    fmt.Printf("Found %d subdomains\n", len(result.Subdomains))
+    for _, sub := range result.Subdomains {
+        fmt.Printf("  %s (source: %s)\n", sub.Host, sub.Source)
+    }
+
+    // HTTP probing with tech detection
+    httpScanner := httpx.NewFullProber()
+    httpResult, _ := httpScanner.Scan(ctx, "example.com", &core.ReconOptions{})
+
+    for _, host := range httpResult.LiveHosts {
+        fmt.Printf("%s [%d] %s\n", host.URL, host.StatusCode, host.Title)
+        if len(host.Technologies) > 0 {
+            fmt.Printf("  Tech: %v\n", host.Technologies)
+        }
+    }
+}
+```
+
+### Recon Pipeline
+
+```go
+// Chain recon tools: Subdomain -> DNS -> HTTP -> Crawl
+targets := []string{"example.com"}
+
+// Step 1: Find subdomains
+subScanner := subfinder.NewAggressiveScanner()
+subResult, _ := subScanner.Scan(ctx, targets[0], nil)
+
+// Step 2: Resolve DNS
+dnsScanner := dnsx.NewFullRecordScanner()
+for _, sub := range subResult.Subdomains {
+    dnsResult, _ := dnsScanner.Scan(ctx, sub.Host, nil)
+    // Process DNS records...
+}
+
+// Step 3: HTTP probe live hosts
+httpScanner := httpx.NewFullProber()
+// ... continue pipeline
+```
+
+---
+
+## Enrichers (Threat Intelligence)
+
+Enrichers add threat intelligence data to findings.
+
+### Available Enrichers
+
+| Enricher | Source | Data Provided |
+|----------|--------|---------------|
+| `epss` | FIRST.org | Exploit Prediction Scoring System |
+| `kev` | CISA | Known Exploited Vulnerabilities catalog |
+
+### Using EPSS Enricher
+
+```go
+import (
+    "context"
+    "github.com/rediverio/sdk/pkg/enrichers/epss"
+    "github.com/rediverio/sdk/pkg/ris"
+)
+
+func main() {
+    ctx := context.Background()
+
+    // Create enricher
+    enricher := epss.NewEnricher()
+
+    // Enrich a single finding
+    finding := ris.Finding{
+        Type: ris.FindingTypeVulnerability,
+        Vulnerability: &ris.VulnerabilityDetails{
+            CVEID: "CVE-2023-44487",
+        },
+    }
+
+    enriched, _ := enricher.Enrich(ctx, &finding)
+    fmt.Printf("EPSS Score: %.4f (%.1f percentile)\n",
+        enriched.Vulnerability.EPSSScore,
+        enriched.Vulnerability.EPSSPercentile)
+
+    // Batch enrichment
+    findings := []ris.Finding{finding1, finding2, finding3}
+    enrichedFindings, _ := enricher.EnrichBatch(ctx, findings)
+}
+```
+
+### Using KEV Enricher
+
+```go
+import (
+    "context"
+    "github.com/rediverio/sdk/pkg/enrichers/kev"
+)
+
+func main() {
+    ctx := context.Background()
+
+    // Create enricher
+    enricher := kev.NewEnricher()
+
+    // Check if CVE is in KEV catalog
+    inKEV, _ := enricher.IsInKEV(ctx, "CVE-2023-44487")
+    if inKEV {
+        fmt.Println("WARNING: This CVE is actively exploited!")
+    }
+
+    // Get full KEV entry
+    entry, _ := enricher.GetKEVEntry(ctx, "CVE-2023-44487")
+    if entry != nil {
+        fmt.Printf("Vendor: %s, Product: %s\n", entry.VendorProject, entry.Product)
+        fmt.Printf("Required Action: %s\n", entry.RequiredAction)
+        fmt.Printf("Due Date: %s\n", entry.DueDate)
+        if entry.KnownRansomware == "Known" {
+            fmt.Println("Used in ransomware campaigns!")
+        }
+    }
+
+    // Enrich findings - KEV entries get elevated severity
+    enriched, _ := enricher.Enrich(ctx, &finding)
+    // Finding severity is elevated to Critical if in KEV
+}
+```
+
+### Combining Enrichers
+
+```go
+// Create enricher chain
+epssEnricher := epss.NewEnricher()
+kevEnricher := kev.NewEnricher()
+
+// Enrich findings with both
+findings, _ := scanner.ScanToFindings(ctx, target, opts)
+findings, _ = epssEnricher.EnrichBatch(ctx, findings)
+findings, _ = kevEnricher.EnrichBatch(ctx, findings)
+
+// Now findings have EPSS scores and KEV status
+for _, f := range findings {
+    if f.Type == ris.FindingTypeVulnerability && f.Vulnerability != nil {
+        fmt.Printf("%s: EPSS=%.4f, InKEV=%v\n",
+            f.Vulnerability.CVEID,
+            f.Vulnerability.EPSSScore,
+            f.Vulnerability.InCISAKEV)
+    }
+}
+```
+
+---
+
 ## Complete CI Integration Example
 
 ```go
@@ -1887,6 +2078,273 @@ for _, fp := range result.Missing {
     uploadFinding(findingsByFingerprint[fp])
 }
 ```
+
+---
+
+## Metrics Collection
+
+The SDK includes a metrics package for collecting and exposing application metrics with Prometheus support.
+
+### Basic Usage
+
+```go
+import "github.com/rediverio/sdk/pkg/metrics"
+
+// Create Prometheus collector with default metrics
+collector := metrics.NewPrometheusCollector(&metrics.PrometheusConfig{
+    Namespace:              "rediverio",
+    RegisterDefaultMetrics: true,
+})
+
+// Set as default collector
+metrics.SetDefaultCollector(collector)
+
+// Use metrics
+metrics.GetDefaultCollector().CounterInc("rediverio_scanner_scans_total", "scanner", "semgrep", "status", "success")
+metrics.GetDefaultCollector().HistogramObserve("rediverio_scanner_scan_duration_seconds", 45.5, "scanner", "semgrep")
+metrics.GetDefaultCollector().GaugeSet("rediverio_agent_active_jobs", 3)
+```
+
+### Timer Helper
+
+```go
+// Measure operation duration
+timer := metrics.NewTimer(collector, "rediverio_http_request_duration_seconds", "method", "GET", "host", "api.rediverio.com")
+// ... do operation ...
+duration := timer.ObserveDuration() // Records to histogram and returns duration
+```
+
+### HTTP Handler for Prometheus
+
+```go
+import "net/http"
+
+// Expose /metrics endpoint for Prometheus scraping
+http.Handle("/metrics", collector.Handler())
+http.ListenAndServe(":8080", nil)
+```
+
+### Built-in Metric Definitions
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `rediverio_scanner_scans_total` | Counter | Total scans executed |
+| `rediverio_scanner_scan_duration_seconds` | Histogram | Scan duration |
+| `rediverio_scanner_findings_total` | Counter | Total findings discovered |
+| `rediverio_agent_jobs_total` | Counter | Total jobs processed |
+| `rediverio_agent_active_jobs` | Gauge | Currently executing jobs |
+| `rediverio_enricher_cache_hits_total` | Counter | Cache hits |
+| `rediverio_http_requests_total` | Counter | HTTP requests made |
+
+### In-Memory Collector (Testing)
+
+```go
+// For testing without Prometheus
+collector := metrics.NewInMemoryCollector()
+collector.CounterInc("test_counter", "label", "value")
+
+// Retrieve values for assertions
+count := collector.GetCounter("test_counter", "label", "value")
+```
+
+---
+
+## Credential Management
+
+The SDK provides a credential management system for secure storage and retrieval of API keys, tokens, and other secrets.
+
+### Store Interface
+
+```go
+import "github.com/rediverio/sdk/pkg/credentials"
+
+// Get credential from default store (environment variables)
+cred, err := credentials.Get(ctx, "github.token")
+if err != nil {
+    log.Fatal(err)
+}
+fmt.Printf("Token: %s\n", cred.Value)
+
+// Convenience function for just the value
+value, err := credentials.GetValue(ctx, "api.key")
+```
+
+### Environment Store (Default)
+
+```go
+// Default store reads from environment variables with REDIVERIO_ prefix
+// REDIVERIO_GITHUB_TOKEN -> key "github.token"
+
+os.Setenv("REDIVERIO_GITHUB_TOKEN", "ghp_xxx")
+cred, _ := credentials.Get(ctx, "github.token")
+```
+
+### Custom Mapping
+
+```go
+// Map specific keys to custom env vars
+store := credentials.NewEnvStoreWithMapping("", map[string]string{
+    "github.token": "GITHUB_TOKEN",
+    "api.key":      "MY_API_KEY",
+})
+credentials.SetDefaultStore(store)
+```
+
+### Memory Store (Testing)
+
+```go
+store := credentials.NewMemoryStore()
+store.Set(ctx, "test.key", &credentials.Credential{
+    Type:  credentials.CredentialTypeAPIKey,
+    Value: "test-value",
+})
+
+cred, _ := store.Get(ctx, "test.key")
+```
+
+### File Store (Local Development)
+
+```go
+// Store credentials in encrypted JSON file (NOT for production)
+store, _ := credentials.NewFileStore("/path/to/credentials.json")
+store.Set(ctx, "my.secret", &credentials.Credential{
+    Value: "secret-value",
+})
+```
+
+### Chained Store (Fallback)
+
+```go
+// Check multiple stores in order
+env := credentials.NewEnvStore("REDIVERIO_")
+file, _ := credentials.NewFileStore(".secrets.json")
+chain := credentials.NewChainedStore(env, file) // env first, then file
+
+// Finds credential from first store that has it
+cred, _ := chain.Get(ctx, "api.key")
+```
+
+### Credential Expiration
+
+```go
+// Check if credential has expired
+if cred.IsExpired() {
+    // Refresh the credential
+}
+```
+
+---
+
+## Health Checks
+
+The SDK includes Kubernetes-compatible health check endpoints for liveness and readiness probes.
+
+### Basic Setup
+
+```go
+import "github.com/rediverio/sdk/pkg/health"
+
+// Create health handler with version info
+h := health.NewHandler(
+    health.WithVersion("1.0.0"),
+    health.WithTimeout(5*time.Second),
+)
+
+// Register custom health checks
+h.RegisterFunc("database", func(ctx context.Context) health.CheckResult {
+    if err := db.Ping(ctx); err != nil {
+        return health.CheckResult{
+            Status: health.StatusUnhealthy,
+            Error:  err.Error(),
+        }
+    }
+    return health.CheckResult{
+        Status:  health.StatusHealthy,
+        Message: "connected",
+    }
+})
+```
+
+### HTTP Handlers
+
+```go
+import "net/http"
+
+mux := http.NewServeMux()
+
+// Kubernetes liveness probe - always returns 200 if app is running
+mux.Handle("/healthz", h.LivenessHandler())
+
+// Kubernetes readiness probe - returns 503 if not ready
+mux.Handle("/readyz", h.ReadinessHandler())
+
+// Full health check - returns detailed check results
+mux.Handle("/health", h.HealthHandler())
+
+http.ListenAndServe(":8080", mux)
+```
+
+### Readiness Control
+
+```go
+// During startup
+health.SetReady(false)
+
+// After initialization complete
+health.SetReady(true)
+
+// During graceful shutdown
+health.SetReady(false)
+```
+
+### Built-in Health Checks
+
+```go
+// HTTP endpoint check
+h.Register("api", &health.HTTPCheck{
+    URL:     "https://api.rediver.io/health",
+    Timeout: 5 * time.Second,
+})
+
+// Database check
+h.Register("db", &health.DatabaseCheck{
+    PingFunc: db.PingContext,
+})
+
+// Simple ping check
+h.Register("ping", &health.PingCheck{})
+```
+
+### Health Response Format
+
+```json
+{
+  "status": "healthy",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "version": "1.0.0",
+  "uptime_seconds": 3600,
+  "checks": {
+    "database": {
+      "status": "healthy",
+      "message": "connected",
+      "duration_ms": 5
+    },
+    "api": {
+      "status": "healthy",
+      "message": "HTTP 200",
+      "duration_ms": 120
+    }
+  }
+}
+```
+
+### Status Aggregation
+
+| Check Statuses | Overall Status |
+|----------------|----------------|
+| All healthy | `healthy` |
+| Some degraded | `degraded` |
+| Any unhealthy | `unhealthy` |
 
 ---
 

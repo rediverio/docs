@@ -5,124 +5,148 @@ nav_order: 1
 permalink: /
 ---
 
-# RediverIO Platform Documentation
+# Rediver Documentation
 
-Welcome to the **RediverIO Platform** - a Continuous Threat Exposure Management (CTEM) platform for discovering assets, scanning vulnerabilities, and prioritizing remediation.
+Welcome to the **Rediver Platform** documentation - a Continuous Threat Exposure Management (CTEM) platform for discovering assets, scanning vulnerabilities, and prioritizing remediation.
 
 ---
 
 ## 🚀 Getting Started
 
-**New to RediverIO?** Start here:
+New to Rediver? Start here:
 
-**→ [Getting Started Guide](./GETTING_STARTED.md)** - Get your platform running in 5 minutes
+| Guide | Description |
+|-------|-------------|
+| **[Quick Start](./getting-started/quick-start.md)** | Get the platform running in 5 minutes |
+| **[First Scan Tutorial](./getting-started/first-scan.md)** | Run your first security scan |
+| **[Enterprise Setup](./getting-started/enterprise-setup.md)** | Production deployment with SSO |
 
 ---
 
-## 📚 Documentation Sections
+## 📚 Documentation by Audience
 
-### [🏗️ Architecture](./architecture/index.md)
-High-level system design, data flow patterns, and technology choices.
-- [System Overview](./architecture/overview.md)
-- [Scan Flow Architecture](./architecture/scan-flow.md) - Complete scan lifecycle
-- [Deployment Modes](./architecture/deployment-modes.md)
-- [Scan Pipeline Design](./architecture/scan-pipeline-design.md)
-- [Workflow Executor](./architecture/workflow-executor.md) - Automation with 14-layer security
+### For Users
 
-### [💻 Backend Services](./backend/index.md)
-Documentation for the Go-based API service.
-- [API Reference](./backend/api-reference.md)
+| Topic | Description |
+|-------|-------------|
+| [End-to-End Workflow](./guides/END_TO_END_WORKFLOW.md) | Complete scan workflow walkthrough |
+| [Scan Management](./guides/scan-management.md) | Configure and run scans |
+| [Notification Integrations](./guides/notification-integrations.md) | Slack, Teams, Email alerts |
+| [Authentication](./guides/authentication.md) | Login and SSO setup |
 
-### [🗄️ Database](./database/index.md)
-Data models, schema definitions, and migration strategies.
-- [Schema Overview](./database/schema.md)
-- [Migrations](./database/migrations.md)
+### For Developers
 
-### [🎨 User Interface](./ui/index.md)
-Frontend documentation for the Next.js tenant dashboard.
-- [UI Development Guides](./ui/guides/index.md)
-- [UI Features](./ui/features/index.md)
-- [UI Operations](./ui/ops/index.md)
+| Topic | Description |
+|-------|-------------|
+| [SDK Quick Start](./guides/sdk-quick-start.md) | Build custom security tools |
+| [API Reference](./backend/api-reference.md) | REST API documentation |
+| [Custom Tools Development](./guides/custom-tools-development.md) | Create custom scanners |
+| [SDK Security Guide](../sdk/docs/SECURITY.md) | Security best practices |
 
-### [🛡️ Admin UI](./admin-ui/index.md)
-Platform administration console for managing agents, jobs, and tokens.
-- [Getting Started](./admin-ui/index.md#getting-started)
-- [Docker Deployment](./admin-ui/index.md#docker-deployment)
-- [API Integration](./admin-ui/index.md#api-integration)
+### For Operators
 
-### [⚙️ Operations](./operations/index.md)
-Development, deployment, and operational guides.
-- [Development Guide](./operations/DEVELOPMENT.md)
-- [Production Deployment](./operations/PRODUCTION_DEPLOYMENT.md) ⭐ **NEW**
-- [Integration Guide](./operations/INTEGRATION.md)
-- [Staging Deployment](./operations/STAGING_DEPLOYMENT.md)
+| Topic | Description |
+|-------|-------------|
+| [Production Deployment](./operations/PRODUCTION_DEPLOYMENT.md) | Kubernetes/Docker/Cloud |
+| [Configuration Reference](./operations/configuration.md) | Environment variables |
+| [Monitoring Guide](./operations/MONITORING.md) | Observability setup |
+| [Troubleshooting](./operations/troubleshooting.md) | Common issues |
 
-### [📖 Platform Guides](./guides/index.md)
-Comprehensive guides for using the platform.
-- [End-to-End Workflow](./guides/END_TO_END_WORKFLOW.md)
-- [Authentication](./guides/authentication.md)
-- [Multi-Tenancy](./guides/multi-tenancy.md)
-- [Scan Management](./guides/scan-management.md)
-- [Security Best Practices](./guides/SECURITY.md) - Includes workflow automation security
-- [Notification Integrations](./guides/notification-integrations.md)
+### For Architects
 
-### [🗺️ Roadmap](./ROADMAP.md)
-Product roadmap and planned features by CTEM phase.
+| Topic | Description |
+|-------|-------------|
+| [System Overview](./architecture/overview.md) | High-level architecture |
+| [Scan Pipeline Design](./architecture/scan-pipeline-design.md) | Scan engine internals |
+| [Workflow Executor](./architecture/workflow-executor.md) | Automation system |
+| [Access Control](./architecture/access-control-flows-and-data.md) | 3-layer security model |
+
+---
+
+## 📖 Documentation Sections
+
+### [Getting Started](./getting-started/)
+Quick start guides and tutorials for new users.
+
+### [Platform Guides](./guides/)
+Comprehensive how-to guides for all platform features:
+- Authentication & SSO
+- Multi-tenancy
+- Scanning & findings
+- Agent configuration
+- SDK development
+
+### [Architecture](./architecture/)
+System design and technical architecture:
+- Component interactions
+- Data flows
+- Security design
+- Integration patterns
+
+### [Operations](./operations/)
+Deployment and operational guides:
+- Development setup
+- Staging/Production deployment
+- Monitoring & alerting
+- Troubleshooting
+
+### [Features](./features/)
+Feature-specific documentation:
+- Platform Agents
+- Scan Profiles
+- Capabilities Registry
+- Asset Modules
+
+### [Backend](./backend/)
+API service documentation:
+- API Reference
+- JWT Structure
+- Database Schema
+
+### [UI](./ui/)
+Frontend application documentation:
+- Architecture
+- Feature guides
+- Deployment
+
+### [Admin UI](./admin-ui/)
+Platform administration console:
+- Agent management
+- Job monitoring
+- Bootstrap tokens
 
 ---
 
 ## 🔧 Component Documentation
 
-### Agent
-- **[Agent Quick Start](../agent/docs/QUICK_START.md)** ⭐ **NEW** - Run your first scan in 5 minutes
-- [Agent README](../agent/README.md) - Complete documentation
-
-### SDK
-- **[SDK API Reference](../sdk/docs/API_REFERENCE.md)** ⭐ **NEW** - Package documentation
-- [SDK README](../sdk/README.md) - Building custom tools
-
-### Schemas
-- [RIS Format](../schemas/README.md) - Rediver Ingest Schema
+| Component | Documentation |
+|-----------|---------------|
+| **Agent** | [Agent Quick Start](../agent/docs/QUICK_START.md) \| [Full README](../agent/README.md) |
+| **SDK** | [SDK README](../sdk/README.md) \| [Security Guide](../sdk/docs/SECURITY.md) |
+| **Schemas** | [RIS Format](../schemas/README.md) |
 
 ---
 
-## 🎯 Quick Links by Role
+## 🔗 External Links
 
-### For New Users
-| Guide | Description |
-|-------|-------------|
-| **[Getting Started](./GETTING_STARTED.md)** | 5-minute platform setup |
-| **[End-to-End Workflow](./guides/END_TO_END_WORKFLOW.md)** | Complete scan walkthrough |
-| **[Agent Quick Start](../agent/docs/QUICK_START.md)** | Run your first scan |
+| Link | Description |
+|------|-------------|
+| [Platform](https://app.rediver.io) | Live platform |
+| [API Docs](https://api.rediver.io/docs) | Interactive API explorer |
+| [GitHub](https://github.com/rediverio) | Source code |
 
-### For Developers
-| Guide | Description |
-|-------|-------------|
-| **[Development Guide](./operations/DEVELOPMENT.md)** | Local development setup |
-| **[API Reference](./backend/api-reference.md)** | Complete API documentation |
-| **[SDK API Reference](../sdk/docs/API_REFERENCE.md)** | Build custom tools |
+---
 
-### For Operations
-| Guide | Description |
-|-------|-------------|
-| **[Production Deployment](./operations/PRODUCTION_DEPLOYMENT.md)** | Kubernetes/Docker/Cloud |
-| **[Staging Deployment](./operations/STAGING_DEPLOYMENT.md)** | Staging environment setup |
-| **[Environment Variables](./ui/ops/ENVIRONMENT_VARIABLES.md)** | Configuration reference |
+## 🗺️ Roadmap
 
-### For Platform Admins
-| Guide | Description |
-|-------|-------------|
-| **[Admin UI](./admin-ui/index.md)** | Platform administration console |
-| **[Platform Admin Guide](./guides/platform-admin.md)** | CLI and API management |
-| **[Platform Agents](./features/platform-agents.md)** | Shared agent architecture |
-| **[Capabilities Registry](./features/capabilities-registry.md)** | Tool capability management |
+See our [Feature Roadmap](./ROADMAP.md) for planned features and CTEM phase coverage.
 
 ---
 
 ## 🤝 Contributing
 
-Please refer to the [Root README](../README.md) for contribution guidelines and workspace setup.
+Please refer to the [Contributing Guide](../CONTRIBUTING.md) for contribution guidelines.
 
 ---
 
-**Questions? Check the guides above or visit [docs.rediver.io](https://docs.rediver.io)**
+**Questions?** Browse the sidebar or visit [docs.rediver.io](https://docs.rediver.io)

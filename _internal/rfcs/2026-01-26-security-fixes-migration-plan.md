@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-Báo cáo đánh giá bảo mật đã phát hiện các lỗ hổng nghiêm trọng trong Scan Orchestration System. Tất cả các vấn đề critical và high severity đã được khắc phục.
+Security assessment report identified critical vulnerabilities in the Scan Orchestration System. All critical and high severity issues have been fixed.
 
 ---
 

@@ -1,11 +1,14 @@
 ---
 layout: default
-title: Roles and Permissions
+title: Roles and Permissions (Legacy)
 parent: Platform Guides
-nav_order: 5
+nav_order: 99
 ---
 
-# Roles and Permissions Guide
+# Roles and Permissions Guide (Legacy)
+
+{: .warning }
+> **⚠️ Deprecated**: This document describes the legacy RBAC system. For the current access control system, see **[Group-Based Access Control](./group-based-access-control.md)** which provides more granular control with Groups, Permission Sets, and Assignment Rules.
 
 Complete guide to role-based access control (RBAC) in Rediver.
 
