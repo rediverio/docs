@@ -1062,6 +1062,6 @@ func pushToRediver(report *ris.Report, apiKey string) error {
 
 ## Related Documentation
 
-- [Data Sources Architecture](../../api/docs/architecture/data-sources.md)
+- [Data Sources Architecture](../architecture/)
 - [API Reference](../backend/api-reference.md)
 - [Authentication Guide](./authentication.md)

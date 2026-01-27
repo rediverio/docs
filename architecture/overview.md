@@ -835,6 +835,6 @@ CREATE TABLE scan_sessions (
 
 ## Related Documentation
 
-- [Backend Architecture](../api/docs/architecture/)
+- [Backend Architecture](./)
 - [Frontend Architecture](../ui/.claude/architecture.md)
 - [API Documentation](../api/docs/api/)

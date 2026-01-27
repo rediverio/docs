@@ -34,7 +34,7 @@ Below is a summary of key migrations applied to the system:
 
 ## PostgreSQL Functions Reference
 
-The platform agent system uses PostgreSQL functions for atomic operations. See detailed documentation in `api/docs/architecture/database-notes.md`.
+The platform agent system uses PostgreSQL functions for atomic operations. See detailed documentation in `the database documentation`.
 
 ### Queue Management Functions (Migration 000080)
 

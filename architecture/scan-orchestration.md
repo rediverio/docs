@@ -275,6 +275,6 @@ All core components are implemented. Next steps:
 
 ## Related Documentation
 
-- [Scan Pipeline Design](/docs/architecture/scan-pipeline-design.md)
-- [Server-Agent Command Protocol](/docs/architecture/server-agent-command.md)
+- [Scan Pipeline Design](./scan-pipeline-design)
+- [Server-Agent Command Protocol](./server-agent-command)
 - [SDK Integration Guide](/sdk/docs/README.md)
