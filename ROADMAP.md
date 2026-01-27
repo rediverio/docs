@@ -6,7 +6,7 @@ nav_order: 100
 
 # Feature Roadmap
 
-**Last Updated:** 2026-01-27
+**Last Updated:** 2026-01-27 (UI Status + Implementation Plans)
 
 This document lists all planned features that are not yet implemented. These features have been temporarily hidden from the UI navigation but are planned for future development.
 
@@ -728,9 +728,84 @@ Features are gated by subscription plan. See [Plans & Licensing](./operations/pl
 
 ---
 
+## UI Implementation Status
+
+### Current State (2026-01-27)
+
+| Status | Count | Percentage |
+|--------|-------|------------|
+| **Implemented** | 93 | 62% |
+| **Placeholder** | 58 | 38% |
+| **Total** | 151 | 100% |
+
+### Placeholder Pages by CTEM Phase
+
+| Phase | Implemented | Placeholder | Key Missing Features |
+|-------|-------------|-------------|----------------------|
+| **Scoping** | 14 | 1 | Scope settings |
+| **Discovery** | 36 | 9 | Exposures, Identity, Attack Paths |
+| **Prioritization** | 3 | 7 | Risk scoring, Threat intel |
+| **Validation** | 15 | 9 | Controls, Simulation, Response |
+| **Mobilization** | 9 | 15 | Remediation, Collaboration, Exceptions |
+| **Insights** | 6 | 10 | Analytics, Reports |
+| **Settings** | 10 | 7 | Integrations (SIEM, Ticketing) |
+
+### Implementation Plan (22 weeks total)
+
+| Phase | Focus | Pages | Duration | Priority |
+|-------|-------|-------|----------|----------|
+| **1** | Mobilization | 15 | 4 weeks | HIGH |
+| **2** | Discovery (Exposures) | 9 | 4 weeks | HIGH |
+| **3** | Prioritization | 7 | 4 weeks | MEDIUM |
+| **4** | Validation | 9 | 4 weeks | MEDIUM |
+| **5** | Insights | 10 | 4 weeks | LOWER |
+| **6** | Settings | 8 | 2 weeks | LOWER |
+
+**Quick Wins (Backend exists, UI only):**
+- Remediation tasks pages
+- Workflow monitoring pages
+- Exposures (filtered Findings views)
+- API Keys management
+
+**Requires Backend Work:**
+- Identity/Shadow IT detection
+- Threat Intelligence feeds
+- Attack Path visualization
+- Simulation engine
+- Control effectiveness testing
+
+See `docs/_internal/rfcs/2026-01-27-placeholder-pages-implementation.md` for full implementation plan.
+
+---
+
+## In-Progress Features
+
+### Group Access Control Phases 7-10 (85% → 100%)
+
+| Phase | Feature | Status | Effort |
+|-------|---------|--------|--------|
+| **7** | Auto-Assignment Rules | Not Started | 2 weeks |
+| **8** | Group Notifications | Not Started | 2 weeks |
+| **9** | External Sync (GitHub/GitLab/Azure AD) | Not Started | 3 weeks |
+| **10** | Permission Set Version Tracking | Not Started | 1 week |
+
+**Key Deliverables:**
+- Automatic finding assignment based on file path patterns
+- CODEOWNERS file parsing for team mapping
+- Group notification channels (Slack, Email, Webhook)
+- External team sync from GitHub Teams, GitLab Groups
+
+See `docs/_internal/rfcs/2026-01-27-group-access-control-phase-7-10.md` for full implementation plan.
+
+---
+
 ## Recent Updates
 
 ### 2026-01-27
+- **Implementation Planning** - Created detailed implementation plans
+  - Group Access Control Phases 7-10 implementation plan
+  - 58 placeholder pages implementation plan (22-week roadmap)
+  - Added UI implementation status section to ROADMAP
 - **Documentation Updates** - Major documentation improvements
   - Added [Workflow Automation](./features/workflows.md) documentation
   - Added [Quality Gates](./features/quality-gates.md) documentation
