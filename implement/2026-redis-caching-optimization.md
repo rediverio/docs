@@ -8,6 +8,11 @@ nav_order: 2
 
 # API Caching Optimization & Redis Integration Plan
 
+**Status:** 📋 Planning
+**Created:** 2026-01-24
+
+---
+
 ## Goal
 
 Optimize API response caching for the Next.js proxy layer to address:

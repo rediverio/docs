@@ -1,8 +1,9 @@
 # Workflows vs Pipelines - Analysis & Implementation Plan
 
 **Created:** 2026-01-26
-**Status:** PLANNING
+**Status:** ✅ COMPLETED
 **Last Updated:** 2026-01-26
+**Completed:** 2026-01-26
 
 ---
 
@@ -139,47 +140,58 @@ Notification (Purple)
 - [x] API types, hooks, endpoints
 - [x] WorkflowBuilder component (reusable)
 
-### Phase 2: Rename for Clarity 🔜 TODO
+### Phase 2: Rename for Clarity ✅ DONE
 
 **Mục tiêu:** Phân biệt rõ ràng giữa Scan Pipelines và Automation Workflows
 
 ```
 /workflows              → Giữ nguyên (Automation Workflows)
-/pipelines              → Rename thành /scan-pipelines hoặc giữ nguyên
+/pipelines              → Giữ nguyên, page title = "Scan Pipelines"
 ```
 
-**Files to update:**
-- [ ] Rename page title: "Scan Pipelines" thay vì "Pipelines"
-- [ ] Update navigation menu
-- [ ] Update docs
+**Files updated:**
+- [x] Rename page title: "Scan Pipelines" thay vì "Pipelines" (already done in page.tsx)
+- [x] Update navigation menu (added to sidebar-data.ts with GitMerge icon)
+- [ ] Update docs (optional, can be done later)
 
-### Phase 3: Build Workflows Backend 🔜 TODO (Future)
+### Phase 3: Build Workflows Backend ✅ COMPLETED
 
 **Mục tiêu:** Tạo backend cho Automation Workflows
 
+**Implemented Files:**
 ```
 api/internal/
 ├── domain/workflow/
-│   ├── entity.go           # Workflow, Node, Edge, NodeType
-│   ├── node_types.go       # Trigger, Condition, Action, Notification
-│   ├── execution.go        # WorkflowRun, NodeRun
-│   ├── errors.go
-│   └── repository.go       # Interfaces
-├── infra/
-│   ├── postgres/
-│   │   ├── workflow_repository.go
-│   │   └── workflow_run_repository.go
-│   └── http/
-│       ├── handler/
-│       │   ├── workflow_handler.go
-│       │   └── workflow_execution_handler.go
-│       └── routes/workflow.go
+│   ├── entity.go           # Workflow, Node, Edge, NodeType ✅
+│   ├── node_types.go       # Trigger, Condition, Action, Notification ✅
+│   ├── execution.go        # WorkflowRun, NodeRun ✅
+│   ├── errors.go           # ✅
+│   └── repository.go       # Interfaces ✅
+├── infra/postgres/
+│   ├── workflow_repository.go      # ✅
+│   └── workflow_run_repository.go  # ✅
 └── app/
-    ├── workflow_service.go         # Core logic
-    └── workflow_executor.go        # Execution engine
+    ├── workflow_service.go         # Core logic ✅
+    ├── workflow_executor.go        # Execution engine with 14 security controls ✅
+    ├── workflow_handlers.go        # HTTP/Notification trigger handlers ✅
+    └── workflow_action_handlers.go # Action execution handlers ✅
 ```
 
-**Database tables:**
+**14 Security Controls Implemented (SEC-WF01 through SEC-WF14):**
+- SSRF Protection: URL validation, blocked CIDRs, TOCTOU-safe dialer
+- SSTI Prevention: Safe string interpolation (no template execution)
+- Resource Exhaustion: Semaphores (50 global, 10 per-tenant), timeouts
+- Tenant Isolation: Multi-phase verification
+- ReDoS Prevention: Expression complexity limits
+- Panic Recovery: Defer-based cleanup with resource tracking
+- Log Injection Prevention: Input sanitization
+
+**Documentation:**
+- `CLAUDE.MD` - Workflow Executor Security Controls section
+- `docs/architecture/workflow-executor.md` - Full architecture documentation
+- `docs/guides/SECURITY.md` - Workflow Automation Security section
+
+**Database tables:** (Implemented via migrations)
 ```sql
 -- Workflow definitions
 CREATE TABLE workflows (
@@ -241,56 +253,65 @@ CREATE TABLE workflow_node_runs (
 );
 ```
 
-### Phase 4: Workflow-Pipeline Integration 🔜 TODO (Future)
+### Phase 4: Workflow-Pipeline Integration ✅ COMPLETED
 
 **Mục tiêu:** Cho phép Workflow trigger Pipeline
 
-**Action Type: "trigger_pipeline"**
+**Implemented in `api/internal/app/workflow_action_handlers.go`:**
+
+Supported Action Types:
+- `trigger_pipeline` - Triggers a scan pipeline with context passing
+- `trigger_scan` - Triggers a scan configuration
+- `send_notification` - Sends notifications via configured channels
+- `create_ticket` - Creates tickets in external systems (Jira, etc.)
+- `update_finding` - Updates finding status/priority
+- `assign_user` - Assigns findings to users
+- `http_request` - Makes HTTP requests (with SSRF protection)
+
+**Code Implementation:**
 ```go
-// workflow/entity.go
-type ActionConfig struct {
-    Type string `json:"type"` // "trigger_pipeline", "send_notification", etc.
-
-    // For trigger_pipeline
-    PipelineID string `json:"pipeline_id,omitempty"`
-    PassContext bool `json:"pass_context,omitempty"`
-
-    // For send_notification
-    Channel string `json:"channel,omitempty"`
-    Template string `json:"template,omitempty"`
-
-    // For create_ticket
-    TicketType string `json:"ticket_type,omitempty"`
-    Assignee string `json:"assignee,omitempty"`
-}
-
-// workflow_executor.go
-func (e *WorkflowExecutor) executeActionNode(ctx context.Context, node *WorkflowNode, input map[string]any) error {
-    switch node.Config.Type {
+// workflow_action_handlers.go
+func (e *WorkflowExecutor) executeAction(ctx context.Context, run *workflow.WorkflowRun, node *workflow.Node, input map[string]any) (*ActionResult, error) {
+    switch node.ActionType {
     case "trigger_pipeline":
-        return e.pipelineService.TriggerPipeline(ctx, app.TriggerPipelineInput{
-            TemplateID:  shared.MustParseID(node.Config.PipelineID),
-            TriggerType: pipeline.TriggerTypeAPI,
-            Context:     input, // Pass workflow context to pipeline
-        })
+        return e.handleTriggerPipeline(ctx, run, node, input)
+    case "trigger_scan":
+        return e.handleTriggerScan(ctx, run, node, input)
     case "send_notification":
-        return e.notificationService.Send(ctx, node.Config.Channel, node.Config.Template, input)
+        return e.handleSendNotification(ctx, run, node, input)
     case "create_ticket":
-        return e.ticketService.Create(ctx, node.Config.TicketType, node.Config.Assignee, input)
-    // ... other action types
+        return e.handleCreateTicket(ctx, run, node, input)
+    case "update_finding":
+        return e.handleUpdateFinding(ctx, run, node, input)
+    case "assign_user":
+        return e.handleAssignUser(ctx, run, node, input)
+    case "http_request":
+        return e.handleHTTPRequest(ctx, run, node, input)
+    default:
+        return nil, workflow.ErrUnknownActionType
     }
 }
 ```
 
-### Phase 5: Connect Workflows Frontend 🔜 TODO (Future)
+### Phase 5: Connect Workflows Frontend ✅ COMPLETED
 
 **Mục tiêu:** Kết nối frontend với backend API
 
-- [ ] Replace mock data with API calls
-- [ ] Add CRUD operations for workflows
-- [ ] Add "Run Pipeline" action in workflow builder
-- [ ] Add pipeline selector component
-- [ ] Real-time execution monitoring
+- [x] Replace mock data with API calls (`useWorkflows`, `useWorkflowRuns` hooks)
+- [x] Add CRUD operations for workflows
+  - [x] Create workflow dialog with name/description
+  - [x] Delete workflow with confirmation
+  - [x] Toggle workflow active status
+  - [x] Trigger workflow execution
+- [x] Visual workflow builder (existing, using ReactFlow)
+- [ ] Pipeline selector component (deferred - can add action nodes manually)
+- [ ] Real-time execution monitoring (deferred - basic polling in place)
+
+**Implementation Details:**
+- File: `ui/src/app/(dashboard)/(mobilization)/workflows/page.tsx`
+- Uses SWR hooks from `ui/src/lib/api/workflow-hooks.ts`
+- Types from `ui/src/lib/api/workflow-types.ts`
+- API endpoints from `ui/src/lib/api/endpoints.ts`
 
 ---
 
@@ -304,9 +325,10 @@ func (e *WorkflowExecutor) executeActionNode(ctx context.Context, node *Workflow
 | Pipeline Frontend Hooks | ✅ Done | `ui/src/lib/api/pipeline-hooks.ts` |
 | Pipeline Page | ✅ Done | `ui/src/app/(dashboard)/(mobilization)/pipelines/` |
 | WorkflowBuilder Component | ✅ Done | `ui/src/features/pipelines/components/` |
-| Workflow Backend | ❌ TODO | - |
-| Workflow API | ❌ TODO | - |
-| Workflow-Pipeline Integration | ❌ TODO | - |
+| Workflow Backend | ✅ Done | `api/internal/domain/workflow/`, `api/internal/app/workflow_*.go` |
+| Workflow API | ✅ Done | `api/internal/app/workflow_handlers.go` |
+| Workflow-Pipeline Integration | ✅ Done | `api/internal/app/workflow_action_handlers.go` |
+| Workflow Frontend Integration | ✅ Done | `ui/src/app/(dashboard)/(mobilization)/workflows/page.tsx` |
 
 ---
 
@@ -324,8 +346,45 @@ func (e *WorkflowExecutor) executeActionNode(ctx context.Context, node *Workflow
 ## 6. Next Steps (Priority Order)
 
 1. ✅ ~~Hoàn thành Pipeline frontend~~ (DONE)
-2. 🔜 Rename/clarify page titles để phân biệt
-3. 🔜 Update navigation menu
-4. 📅 (Future) Build Workflows backend
-5. 📅 (Future) Connect Workflows frontend to API
-6. 📅 (Future) Add trigger_pipeline action type
+2. ✅ ~~Rename/clarify page titles để phân biệt~~ (DONE - page.tsx has "Scan Pipelines")
+3. ✅ ~~Update navigation menu~~ (DONE - sidebar-data.ts updated with GitMerge icon)
+4. ✅ ~~Build Workflows backend~~ (DONE - with 14 security controls)
+5. ✅ ~~Add trigger_pipeline action type~~ (DONE - 7 action types implemented)
+6. ✅ ~~Connect Workflows frontend to API~~ (DONE)
+
+---
+
+## 7. Implementation Details (Added 2026-01-26)
+
+### Workflow Executor Security Controls
+
+The workflow executor implements 14 security controls:
+
+| Control | Description |
+|---------|-------------|
+| SEC-WF01 | SSTI Prevention - Safe string interpolation |
+| SEC-WF02 | SSRF Prevention - URL validation with blocklist |
+| SEC-WF03 | Template Injection - No template execution |
+| SEC-WF04 | Resource Limits - Global semaphore (50) |
+| SEC-WF05 | Tenant Isolation - Context verification |
+| SEC-WF06 | Execution Timeouts - Per-node timeouts |
+| SEC-WF07 | Rate Limiting - Per-tenant semaphore (10) |
+| SEC-WF08 | Data Isolation - Tenant boundary checks |
+| SEC-WF09 | Network Security - Blocked private CIDRs |
+| SEC-WF10 | Memory Limits - Response size caps |
+| SEC-WF11 | ReDoS Prevention - Expression complexity limits |
+| SEC-WF12 | Panic Recovery - Defer-based cleanup |
+| SEC-WF13 | TOCTOU Prevention - Safe DNS resolution |
+| SEC-WF14 | Log Injection - Input sanitization |
+
+### Test Scripts
+
+Security tests are available at:
+- `api/scripts/test_workflow_executor.go` - 44 tests
+- `api/scripts/test_security_controls.go` - 39 tests
+- `api/scripts/run_security_tests.sh` - Main runner
+
+Run with:
+```bash
+cd api && ./scripts/run_security_tests.sh
+```

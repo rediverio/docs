@@ -10,11 +10,38 @@ nav_order: 1
 
 > Tối ưu từ 4+ API calls xuống 1 call sau login
 
-**Status:** Planning
+**Status:** ✅ Completed
 **Priority:** Medium
 **Estimated Effort:** 1-2 weeks
 **Impact:** 60-70% faster initial load
-**Last Updated:** 2026-01-24
+**Last Updated:** 2026-01-26
+**Completed:** 2026-01-26
+
+---
+
+## Implementation Summary
+
+**Completed:** 2026-01-26
+
+### Files Implemented
+
+**Backend:**
+- `api/internal/infra/http/handler/bootstrap_handler.go` - Bootstrap handler with concurrent data fetching
+- `api/internal/infra/http/routes/misc.go` - Route registration for `/api/v1/me/bootstrap`
+
+**Frontend:**
+- `ui/src/context/bootstrap-provider.tsx` - Bootstrap context provider with hooks
+- Integration with `PermissionProvider` for permissions from bootstrap
+- Integration with `useTenantSubscription` for subscription data
+- Integration with `useTenantModules` for modules data
+
+### Design Decisions
+
+1. **Dashboard excluded from bootstrap** - Dashboard stats are NOT included to reduce query load. Dashboard should be fetched separately via `/api/v1/dashboard/stats` when needed.
+
+2. **Concurrent fetching** - Uses `errgroup` for parallel fetching of permissions, subscription, and modules.
+
+3. **Graceful degradation** - Non-fatal errors (subscription, modules) return partial data rather than failing the entire request.
 
 ---
 
@@ -168,7 +195,7 @@ Dashboard Ready (200ms total) ← 4x FASTER!
 
 ## Implementation Plan
 
-### Phase 1: Backend - Bootstrap Endpoint (2-3 days)
+### Phase 1: Backend - Bootstrap Endpoint ✅ Completed
 
 #### 1.1 Create Bootstrap Handler
 
@@ -395,7 +422,7 @@ r.Route("/me", func(r chi.Router) {
 })
 ```
 
-### Phase 2: Frontend - Bootstrap Hook (1-2 days)
+### Phase 2: Frontend - Bootstrap Hook ✅ Completed
 
 #### 2.1 Create Bootstrap Hook
 
@@ -565,7 +592,7 @@ export function useBootstrapModules() {
 }
 ```
 
-### Phase 3: Integration (2-3 days)
+### Phase 3: Integration ✅ Completed
 
 #### 3.1 Update Providers
 

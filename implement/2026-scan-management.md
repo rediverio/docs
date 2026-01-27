@@ -1,5 +1,11 @@
 # Scan Management Implementation Plan
 
+**Status:** ✅ Completed
+**Created:** 2026-01-18
+**Last Updated:** 2026-01-26
+
+---
+
 This document outlines the comprehensive implementation plan for Rediver's Scan Management system, inspired by best practices from reNgine and other security scanning platforms.
 
 ## Overview
@@ -59,9 +65,9 @@ The Scan Management system provides a complete solution for managing security sc
 
 ## Implementation Phases
 
-### Phase 1: Tool Registry (Current)
+### Phase 1: Tool Registry
 
-**Status:** In Progress
+**Status:** ✅ Completed
 
 **Description:** Foundation for all tool-related features. Defines available scanners with their metadata, installation info, and default configurations.
 
@@ -93,16 +99,16 @@ The Scan Management system provides a complete solution for managing security sc
 - `internal/infra/postgres/tool_execution_repository.go` - Execution repository
 - `internal/app/tool_service.go` - Service layer
 
-**Pending:**
-- `internal/infra/http/handler/tool_handler.go` - HTTP handlers
-- `internal/domain/permission/permission.go` - Add tool permissions
-- `internal/infra/http/routes.go` - Register routes
+**Implemented:**
+- `internal/infra/http/handler/tool_handler.go` - HTTP handlers ✅
+- `internal/domain/permission/permission.go` - Tool permissions ✅
+- `internal/infra/http/routes/scanning.go` - Routes registered ✅
 
 **Frontend:**
-- `src/lib/api/tool-types.ts` - TypeScript types
-- `src/lib/api/tool-hooks.ts` - SWR hooks
-- `src/features/tools/` - Tool management components
-- Add to Settings > Scanning navigation
+- `src/lib/api/tool-types.ts` - TypeScript types ✅
+- `src/lib/api/tool-hooks.ts` - SWR hooks ✅
+- `src/features/tools/` - Tool management components ✅
+- Settings > Scanning navigation ✅
 
 #### Seeded Tools
 
@@ -217,7 +223,7 @@ CREATE TABLE IF NOT EXISTS scans (
 
 ### Phase 3: Statistics Dashboard
 
-**Status:** Planned
+**Status:** ✅ Completed
 
 **Description:** Overview page with real-time statistics for Pipelines, Scans, and Jobs.
 
@@ -247,7 +253,7 @@ CREATE TABLE IF NOT EXISTS scans (
 
 ### Phase 4: Visual Workflow Builder
 
-**Status:** Planned
+**Status:** ✅ Completed (via Pipelines system)
 
 **Description:** DAG-based visual workflow editor using React Flow.
 
@@ -312,7 +318,7 @@ CREATE TABLE IF NOT EXISTS scans (
 
 ### Phase 5: Advanced Scheduling
 
-**Status:** Planned
+**Status:** ✅ Partially Completed (basic cron, timezone support)
 
 **Description:** Enhanced scheduling with cron expressions, timezone support, and trigger types.
 
@@ -487,13 +493,13 @@ The Tool Registry integrates with `sdk` through:
 
 | Phase | Feature | Status |
 |-------|---------|--------|
-| 1 | Tool Registry Backend | Completed |
-| 1 | Tool Registry Frontend | Completed |
-| 2 | Scans Backend | Completed |
-| 2 | Scans Frontend | Completed |
-| 3 | Statistics Dashboard | Planned |
-| 4 | Workflow Builder | Planned |
-| 5 | Advanced Scheduling | Planned |
+| 1 | Tool Registry Backend | ✅ Completed |
+| 1 | Tool Registry Frontend | ✅ Completed |
+| 2 | Scans Backend | ✅ Completed |
+| 2 | Scans Frontend | ✅ Completed |
+| 3 | Statistics Dashboard | ✅ Completed |
+| 4 | Workflow Builder | ✅ Completed (via Pipelines) |
+| 5 | Advanced Scheduling | ✅ Completed (basic cron, timezone)
 
 ---
 

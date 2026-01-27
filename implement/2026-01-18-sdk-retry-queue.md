@@ -1,5 +1,10 @@
 # Retry Queue Implementation Plan
 
+**Status:** 📋 Planning
+**Created:** 2026-01-18
+
+---
+
 ## Executive Summary
 
 This document outlines the implementation plan for a **persistent retry queue** in the Rediver SDK. The goal is to ensure that scan data is never lost due to temporary network failures or server unavailability.
