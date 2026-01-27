@@ -79,7 +79,6 @@ exclude:
   - vendor/
   - .git/
   - .github/
-  - README.md
 
 # Default front matter
 defaults:
