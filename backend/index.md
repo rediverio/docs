@@ -200,7 +200,7 @@ make migrate-down   # Rollback migration
 # Security & Pre-commit
 make pre-commit-install  # Install pre-commit hooks
 make pre-commit-run      # Run all security checks
-make security-scan       # Full security scan (gitleaks + gosec + trivy)
+make security-scan       # Full security scan with Rediver Agent (semgrep + gitleaks + trivy)
 make gitleaks            # Run secret detection only
 ```
 
