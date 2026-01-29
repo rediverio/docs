@@ -7,6 +7,9 @@ nav_order: 10
 
 # Data Flow Analysis Guide
 
+{: .note }
+> This is a user guide. For technical implementation details, see [Data Flow Tracking Feature](../features/data-flow-tracking.md).
+
 This guide explains how to use data flow (taint tracking) information to understand and remediate vulnerabilities.
 
 ---

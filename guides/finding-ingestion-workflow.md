@@ -7,6 +7,12 @@ nav_order: 8
 
 # Finding Ingestion Workflow
 
+{: .note }
+> This is a user guide. For technical implementation details, see:
+> - [Finding Types & Fingerprinting](../features/finding-types.md)
+> - [Finding Deduplication](../features/finding-deduplication.md)
+> - [Data Flow Tracking](../features/data-flow-tracking.md)
+
 This guide explains how security findings flow through the Rediver platform, from scanner output to actionable insights.
 
 ---

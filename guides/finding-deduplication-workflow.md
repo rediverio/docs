@@ -7,6 +7,9 @@ nav_order: 9
 
 # Finding Deduplication Workflow
 
+{: .note }
+> This is a user guide. For technical implementation details, see [Finding Deduplication Feature](../features/finding-deduplication.md).
+
 This guide explains how the platform deduplicates security findings to prevent alert fatigue and maintain accurate metrics.
 
 ---
