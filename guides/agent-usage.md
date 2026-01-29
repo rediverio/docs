@@ -189,11 +189,19 @@ agent -tools semgrep,gitleaks -target . -fail-on medium -output-format sarif -ou
 agent -tool semgrep -target . -output-format json
 
 # SARIF 2.1.0 output (for GitHub/GitLab Security Dashboard)
+# Includes codeFlows for attack path visualization
 agent -tool semgrep -target . -output-format sarif -output results.sarif
 
 # Table output (default, human-readable)
 agent -tool semgrep -target . -output-format table
 ```
+
+**SARIF 2.1.0 Features:**
+- `codeFlows` - Taint tracking paths (source → intermediate → sink)
+- `fingerprints` - Deduplication fingerprints
+- `partialFingerprints` - Type-aware fingerprints for migration
+- `relatedLocations` - Additional context locations
+- `stacks` - Call stack traces
 
 ---
 
@@ -209,6 +217,28 @@ agent -tool semgrep -target . -output-format table
 | `trivy-image` | Container | Container image scanning |
 | `trivy-full` | All | vuln + misconfig + secret |
 | `nuclei` | DAST | Dynamic application security testing |
+
+#### Data Flow Analysis (Taint Tracking)
+
+The agent automatically enables **dataflow traces** for Semgrep scans. This provides attack path visualization showing how untrusted data flows from source (user input) to sink (vulnerable function).
+
+**Output includes:**
+- **Source locations** - Where tainted data enters (e.g., `request.form['user']`)
+- **Intermediate steps** - How data is transformed/propagated
+- **Sink locations** - Where the vulnerability occurs (e.g., `db.execute(query)`)
+
+The data flow information is output in SARIF 2.1.0 `codeFlows` format and ingested into the platform's `finding_data_flows` tables for visualization.
+
+**Example output:**
+```
+Source: handlers/user.go:25 → username := r.FormValue("username")
+    ↓
+Intermediate: handlers/user.go:30 → query := fmt.Sprintf("SELECT * WHERE name='%s'", username)
+    ↓
+Sink: handlers/user.go:35 → rows, _ := db.Query(query)
+```
+
+See [Data Flow Analysis Guide](data-flow-analysis.md) for how to use this information for remediation.
 
 ### Secrets Executor
 
@@ -509,7 +539,7 @@ jobs:
 **Key flags explained:**
 - `-fail-on high`: Fails the pipeline if any high or critical findings
 - `-comments`: Posts inline comments on PR for each finding
-- `-output-format sarif`: SARIF 2.1.0 for GitHub Security tab
+- `-output-format sarif`: SARIF 2.1.0 for GitHub Security tab (includes `codeFlows` for attack path visualization)
 - `-auto-ci`: Auto-detects GitHub Actions environment
 
 ### GitLab CI
@@ -1278,11 +1308,13 @@ Scans for vulnerabilities across different security domains.
     "target": "/path/to/project",
     "options": {
       "config": ["p/security-audit", "p/owasp-top-ten"],
-      "dataflow_trace": true
+      "dataflow_traces": true
     }
   }
 }
 ```
+
+> **Note:** `dataflow_traces` is enabled by default. Set to `false` to disable taint tracking (faster but no attack path info).
 
 ---
 

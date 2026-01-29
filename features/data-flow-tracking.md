@@ -195,21 +195,36 @@ finding_flow_locations:
 ### Get Data Flows for a Finding
 
 ```
-GET /api/v1/findings/{id}/data-flows
+GET /api/v1/findings/{id}/dataflows
 ```
 
 Response:
 ```json
 {
-  "data_flows": [
+  "finding_id": "uuid-123",
+  "summary": {
+    "total_flows": 1,
+    "total_locations": 3,
+    "source_count": 1,
+    "sink_count": 1,
+    "has_sanitizer": false
+  },
+  "flows": [
     {
-      "id": "...",
+      "id": "flow-uuid",
       "flow_index": 0,
       "message": "SQL injection from user input",
-      "locations": [
-        { "step_index": 0, "location_type": "source", ... },
-        { "step_index": 1, "location_type": "intermediate", ... },
-        { "step_index": 2, "location_type": "sink", ... }
+      "importance": "essential",
+      "sources": [
+        { "path": "handlers/user.go", "line": 25, "location_type": "source", "label": "username" }
+      ],
+      "sinks": [
+        { "path": "handlers/user.go", "line": 35, "location_type": "sink" }
+      ],
+      "traces": [
+        { "step_index": 0, "location_type": "source", "path": "handlers/user.go", "line": 25 },
+        { "step_index": 1, "location_type": "intermediate", "path": "handlers/user.go", "line": 30 },
+        { "step_index": 2, "location_type": "sink", "path": "handlers/user.go", "line": 35 }
       ]
     }
   ]
@@ -219,19 +234,19 @@ Response:
 ### Query Flows by File
 
 ```
-GET /api/v1/data-flows/by-file?file_path=handlers/auth.go
+GET /api/v1/dataflows/by-file?file_path=handlers/auth.go
 ```
 
 ### Query Flows by Function
 
 ```
-GET /api/v1/data-flows/by-function?function_name=CreateUser
+GET /api/v1/dataflows/by-function?function_name=CreateUser
 ```
 
 ### Get Sources and Sinks Only
 
 ```
-GET /api/v1/findings/{id}/data-flows/sources-sinks
+GET /api/v1/findings/{id}/dataflows/sources-sinks
 ```
 
 ## Security Considerations
@@ -325,13 +340,62 @@ Determine optimal fix location by analyzing the flow:
 ### Semgrep
 
 ```bash
-# Enable dataflow traces
+# Enable dataflow traces (requires Semgrep Pro)
+# Note: Semgrep OSS has limited dataflow support
 semgrep --config auto --dataflow-traces -o results.sarif
 ```
 
-### CodeQL
+### CodeQL (Recommended for Full Dataflow)
 
-Path queries automatically include data flows in SARIF output.
+CodeQL provides the most comprehensive dataflow analysis with full inter-procedural and cross-file taint tracking.
+
+```bash
+# Create CodeQL database
+codeql database create db --language=go --source-root=/path/to/code
+
+# Run security queries (includes dataflow in SARIF output)
+codeql database analyze db \
+    codeql/go-queries:security-extended \
+    --format=sarif-latest \
+    --output=results.sarif
+```
+
+**SDK Usage:**
+
+```go
+import "github.com/rediverio/sdk/pkg/scanners"
+
+// Create CodeQL scanner for Go
+scanner := scanners.CodeQLGo()
+scanner.Verbose = true
+
+// Scan
+result, err := scanner.Scan(ctx, "/path/to/code", nil)
+
+// Parse with full dataflow extraction
+parser := codeql.NewParser()
+findings, err := parser.Parse(result.RawOutput)
+
+// Each finding includes DataFlow with:
+// - Sources (taint entry points)
+// - Intermediates (propagation steps)
+// - Sinks (vulnerable function calls)
+// - CallPath (function call chain)
+// - CrossFile/Interprocedural flags
+```
+
+**Supported Languages:**
+
+| Language | Query Pack | Notes |
+|----------|------------|-------|
+| Go | `codeql/go-queries` | Full support |
+| Java | `codeql/java-queries` | Full support |
+| JavaScript/TypeScript | `codeql/javascript-queries` | Full support |
+| Python | `codeql/python-queries` | Full support |
+| C/C++ | `codeql/cpp-queries` | Full support |
+| C# | `codeql/csharp-queries` | Full support |
+| Ruby | `codeql/ruby-queries` | Full support |
+| Swift | `codeql/swift-queries` | Beta |
 
 ## Related Documentation
 

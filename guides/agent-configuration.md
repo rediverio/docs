@@ -132,7 +132,7 @@ advanced:
 
 | Scanner | Type | Description |
 |---------|------|-------------|
-| `semgrep` | SAST | Static analysis with taint tracking |
+| `semgrep` | SAST | Static analysis with dataflow/taint tracking |
 | `gitleaks` | Secret | Secret and credential detection |
 | `trivy` | SCA | Dependency vulnerability scanning |
 | `trivy-config` | IaC | Infrastructure as Code scanning |
@@ -148,6 +148,7 @@ scanners:
     config:
       rules: ["p/default", "p/security-audit"]
       exclude: ["*_test.go"]
+      dataflow_traces: true  # Enable taint tracking (default: true)
 
   - name: gitleaks
     enabled: true
@@ -161,14 +162,41 @@ scanners:
       severity: ["HIGH", "CRITICAL"]
 ```
 
+#### Semgrep Data Flow Traces
+
+The `dataflow_traces` option enables Semgrep's `--dataflow-traces` flag, which provides attack path information:
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `dataflow_traces` | bool | `true` | Enable taint tracking for attack paths |
+
+When enabled, findings include source → intermediate → sink paths in SARIF `codeFlows` format. This data is ingested into the platform's Data Flow Tracking feature for visualization.
+
+**Disable for faster scans:**
+```yaml
+scanners:
+  - name: semgrep
+    enabled: true
+    config:
+      dataflow_traces: false  # Faster but no attack path info
+```
+
 ### Output Section
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `format` | string | `json` | Output format: json, sarif, text |
 | `file` | string | stdout | Output file path |
-| `sarif` | bool | `false` | Generate SARIF report |
+| `sarif` | bool | `false` | Generate SARIF 2.1.0 report |
 | `sarif_file` | string | `""` | SARIF output file |
+
+**SARIF 2.1.0 Output:**
+
+When `sarif: true` or `-output-format sarif`, the output includes:
+- `codeFlows` - Taint tracking paths (source → intermediate → sink)
+- `fingerprints` / `partialFingerprints` - Deduplication fingerprints
+- `relatedLocations` - Additional context locations
+- `stacks` - Call stack traces (when available)
 
 ### CI Section
 
@@ -333,6 +361,8 @@ See [SDK Security Guide](https://github.com/rediverio/sdk#security) for detailed
 
 ## Related Documentation
 
+- [Agent Usage Guide](agent-usage.md) - Full usage guide with examples
+- [Data Flow Analysis Guide](data-flow-analysis.md) - Using attack path information
 - [Docker Deployment Guide](./docker-deployment.md)
 - [SDK Development Guide](./sdk-development.md)
 - [SDK Security Guide](https://github.com/rediverio/sdk#security)

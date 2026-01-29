@@ -100,7 +100,7 @@ Each step shows:
 ### Get All Flows for a Finding
 
 ```bash
-curl /api/v1/findings/{finding_id}/data-flows \
+curl /api/v1/findings/{finding_id}/dataflows \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -108,35 +108,60 @@ curl /api/v1/findings/{finding_id}/data-flows \
 ```json
 {
   "finding_id": "uuid-123",
-  "data_flows": [
+  "summary": {
+    "total_flows": 1,
+    "total_locations": 3,
+    "source_count": 1,
+    "sink_count": 1,
+    "has_sanitizer": false
+  },
+  "flows": [
     {
       "id": "flow-uuid",
       "flow_index": 0,
       "message": "SQL injection from user input to database query",
       "importance": "essential",
-      "locations": [
+      "sources": [
+        {
+          "path": "handlers/user.go",
+          "line": 25,
+          "location_type": "source",
+          "function_name": "CreateUser",
+          "label": "username",
+          "snippet": "username := r.FormValue(\"username\")"
+        }
+      ],
+      "sinks": [
+        {
+          "path": "handlers/user.go",
+          "line": 35,
+          "location_type": "sink",
+          "function_name": "CreateUser",
+          "snippet": "rows, err := db.Query(query)"
+        }
+      ],
+      "traces": [
         {
           "step_index": 0,
           "location_type": "source",
-          "file_path": "handlers/user.go",
-          "start_line": 25,
+          "path": "handlers/user.go",
+          "line": 25,
           "function_name": "CreateUser",
-          "label": "username",
           "snippet": "username := r.FormValue(\"username\")"
         },
         {
           "step_index": 1,
           "location_type": "intermediate",
-          "file_path": "handlers/user.go",
-          "start_line": 30,
+          "path": "handlers/user.go",
+          "line": 30,
           "function_name": "CreateUser",
           "snippet": "query := fmt.Sprintf(\"SELECT * FROM users WHERE name='%s'\", username)"
         },
         {
           "step_index": 2,
           "location_type": "sink",
-          "file_path": "handlers/user.go",
-          "start_line": 35,
+          "path": "handlers/user.go",
+          "line": 35,
           "function_name": "CreateUser",
           "snippet": "rows, err := db.Query(query)"
         }
@@ -151,7 +176,7 @@ curl /api/v1/findings/{finding_id}/data-flows \
 Find all data flows that pass through a specific file:
 
 ```bash
-curl "/api/v1/data-flows/by-file?file_path=handlers/auth.go&page=1&limit=50" \
+curl "/api/v1/dataflows/by-file?file_path=handlers/auth.go&page=1&limit=50" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -160,14 +185,14 @@ curl "/api/v1/data-flows/by-file?file_path=handlers/auth.go&page=1&limit=50" \
 Find all data flows through a specific function:
 
 ```bash
-curl "/api/v1/data-flows/by-function?function_name=CreateUser&page=1&limit=50" \
+curl "/api/v1/dataflows/by-function?function_name=CreateUser&page=1&limit=50" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
 ### Get Sources and Sinks Only
 
 ```bash
-curl "/api/v1/findings/{finding_id}/data-flows/sources-sinks" \
+curl "/api/v1/findings/{finding_id}/dataflows/sources-sinks" \
   -H "Authorization: Bearer $TOKEN"
 ```
 

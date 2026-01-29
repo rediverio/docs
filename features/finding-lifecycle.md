@@ -18,6 +18,7 @@ Finding Lifecycle manages the automatic status transitions of security findings 
 ## Problem Statement
 
 Without lifecycle management:
+
 1. **Fixed findings remain open** - Developers fix code but findings stay "open" indefinitely
 2. **Dashboard clutter** - Stale feature branch findings pollute the main dashboard
 3. **No audit trail** - Status changes happen without explanation
@@ -238,6 +239,7 @@ GET /api/v1/findings/{id}
 ```
 
 Response includes:
+
 ```json
 {
   "id": "...",
@@ -258,6 +260,7 @@ PATCH /api/v1/branches/{id}
 ```
 
 Request:
+
 ```json
 {
   "keep_when_inactive": false,

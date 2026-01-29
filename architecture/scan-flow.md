@@ -348,17 +348,21 @@ The IngestService processes scan results using optimized batch operations.
 
 ### Ingest Pipeline (Batch Optimized)
 
-The pipeline uses batch operations to avoid N+1 query problems:
+The pipeline uses batch operations to avoid N+1 query problems.
+
+> **Note**: If the report has no explicit assets but contains findings, the pipeline
+> auto-creates an asset from `BranchInfo.RepositoryURL`. See [Asset Auto-Creation](./asset-auto-creation.md).
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    INGEST PIPELINE                           │
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
-│  Step 1: PROCESS TARGETS (Assets)                            │
-│       ├─ Normalize identifiers (URL, ARN, short name)        │
-│       ├─ Detect provider (AWS, GitHub, GitLab...)            │
-│       └─ Create or link Asset entities                       │
+│  Step 1: PROCESS ASSETS                                      │
+│       ├─ Auto-create from BranchInfo if assets[] is empty   │
+│       ├─ Normalize identifiers (canonical repo name)         │
+│       ├─ Detect provider (GitHub, GitLab...)                 │
+│       └─ Upsert Asset entities (create or update)            │
 │                                                              │
 │  Step 2: BATCH CHECK FINGERPRINTS (1 SQL query)              │
 │       └─ WHERE fingerprint IN (fp1, fp2, fp3...)             │
